@@ -122,19 +122,79 @@ Windows.PROGRAMS = {
 }
 
 function Windows:Init()
+    print("[WoW95] Windows:Init() called!")
     WoW95:Debug("Initializing Windows module...")
     
     -- Make program definitions available globally
     WoW95.PROGRAMS = self.PROGRAMS
     
-    -- Delay frame hooking to ensure UI is loaded
-    C_Timer.After(1, function()
-        WoW95:Print("WoW95 Windows: Initializing window hooks...")
-        self:HookBlizzardWindows()
+    -- Hook Blizzard frames directly (inline implementation)
+    C_Timer.After(0.1, function()
+        WoW95:Print("WoW95 Windows: Setting up immediate hooks...")
+        Windows:SetupFrameHooks()
+    end)
+    
+    -- Also set up a delayed hook for any frames that load later
+    C_Timer.After(2, function()
+        WoW95:Print("WoW95 Windows: Setting up delayed hooks...")
+        Windows:SetupFrameHooks()
     end)
     
     self.isInitialized = true
+    print("[WoW95] Windows module initialization complete - isInitialized: " .. tostring(self.isInitialized))
     WoW95:Debug("Windows module initialized successfully!")
+end
+
+-- Simple frame hooking function (guaranteed to load early)
+function Windows:SetupFrameHooks()
+    WoW95:Debug("Starting SetupFrameHooks...")
+    
+    -- Hook character frame
+    if CharacterFrame then
+        WoW95:Debug("Hooking CharacterFrame")
+        if not CharacterFrame.WoW95Hooked then
+            CharacterFrame:HookScript("OnShow", function()
+                WoW95:Print("Character frame shown - creating Windows 95 window!")
+                Windows:CreateSimpleCharacterWindow()
+            end)
+            CharacterFrame.WoW95Hooked = true
+        end
+    end
+    
+    WoW95:Debug("SetupFrameHooks completed")
+end
+
+-- Simple character window creation
+function Windows:CreateSimpleCharacterWindow()
+    -- Don't create if already exists
+    if self.programWindows["CharacterFrame"] then
+        return
+    end
+    
+    WoW95:Print("Creating simple Windows 95 character window...")
+    
+    -- Hide the original frame
+    if CharacterFrame then
+        CharacterFrame:SetAlpha(0)
+        CharacterFrame:EnableMouse(false)
+    end
+    
+    -- Create a simple Windows 95 styled window
+    local window = WoW95:CreateWindow("WoW95SimpleCharacter", UIParent, 400, 300, "Character - World of Warcraft")
+    window:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    
+    -- Add some basic content
+    local content = window:CreateFontString(nil, "OVERLAY")
+    content:SetPoint("CENTER", window, "CENTER", 0, 0)
+    content:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    content:SetText("Windows 95 Character Window\n(Simplified Version)")
+    content:SetTextColor(0, 0, 0, 1)
+    content:SetShadowOffset(0, 0)
+    
+    window:Show()
+    self.programWindows["CharacterFrame"] = window
+    
+    WoW95:Print("Simple character window created successfully!")
 end
 
 function Windows:CreateCharacterWindow(name, parent, width, height, title)
@@ -2042,67 +2102,43 @@ end
 -- World Map Reskinning System
 function Windows:ReskinWorldMapFrame(frameName, program)
     WoW95:Debug("=== RESKIN WORLD MAP CALLED ===")
-    WoW95:Print("Reskinning WorldMapFrame with Windows 95 style...")
     
     if not WorldMapFrame then
         WoW95:Debug("WorldMapFrame not found, cannot reskin")
-        WoW95:Print("ERROR: WorldMapFrame not found!")
         return
     end
     
-    -- Check if we're toggling the map (pressing M again)
-    if self.programWindows[frameName] and WorldMapFrame:IsShown() then
-        -- Map is already reskinned and shown, so close it
-        WoW95:Debug("Map already reskinned, closing it")
-        WorldMapFrame:Hide()
+    -- If already styled and showing, just register it
+    if WorldMapFrame:IsShown() and not self.programWindows[frameName] then
+        self:StyleAndRegisterMap(frameName, program)
         return
     end
     
-    -- Don't create duplicate windows
-    if self.programWindows[frameName] then 
-        WoW95:Debug("WorldMapFrame already reskinned")
-        local existingFrame = self.programWindows[frameName] 
-        if existingFrame and existingFrame:IsShown() then
-            existingFrame:Raise()
-        end
+    -- If already registered but hidden, just show it
+    if self.programWindows[frameName] and not WorldMapFrame:IsShown() then
+        WorldMapFrame:Show()
         return
     end
     
-    -- Apply Windows 95 styling to the existing WorldMapFrame
-    self:ApplyWindows95StyleToWorldMap()
+    -- Style and register the map
+    self:StyleAndRegisterMap(frameName, program)
+end
+
+function Windows:StyleAndRegisterMap(frameName, program)
+    WoW95:Debug("Styling and registering map")
     
-    -- Ensure the WorldMapFrame remains visible and interactive
+    -- Apply compact Windows 95 styling
+    self:ApplyCompactMapStyle()
+    
+    -- Set proper size for map content only (much smaller)
+    WorldMapFrame:ClearAllPoints()
+    WorldMapFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    WorldMapFrame:SetSize(600, 400)  -- Much smaller, just for map
+    
+    -- Ensure map is visible and interactive
     WorldMapFrame:SetAlpha(1)
     WorldMapFrame:EnableMouse(true)
     WorldMapFrame:Show()
-    
-    -- Lock the frame position and size to prevent jumping
-    WorldMapFrame:ClearAllPoints()
-    WorldMapFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    
-    -- Make the window just big enough for the map content (smaller, more compact)
-    WorldMapFrame:SetSize(800, 600)
-    
-    -- Prevent Blizzard from changing our size/position
-    WorldMapFrame:SetResizable(false)
-    WorldMapFrame:SetMovable(false)
-    
-    -- Hook into position/size changes to prevent jumping
-    local originalSetPoint = WorldMapFrame.SetPoint
-    WorldMapFrame.SetPoint = function(self, ...)
-        -- Ignore position changes from other sources
-        WoW95:Debug("Blocked position change attempt")
-    end
-    
-    local originalSetSize = WorldMapFrame.SetSize
-    WorldMapFrame.SetSize = function(self, ...)
-        -- Ignore size changes from other sources
-        WoW95:Debug("Blocked size change attempt")
-    end
-    
-    -- Store original functions for cleanup
-    WorldMapFrame.wow95OriginalSetPoint = originalSetPoint
-    WorldMapFrame.wow95OriginalSetSize = originalSetSize
     
     -- Store reference for taskbar
     self.programWindows[frameName] = WorldMapFrame
@@ -2114,8 +2150,7 @@ function Windows:ReskinWorldMapFrame(frameName, program)
     -- Notify taskbar
     WoW95:OnWindowOpened(WorldMapFrame)
     
-    WoW95:Debug("WorldMapFrame reskinned successfully")
-    WoW95:Print("WorldMapFrame reskinned successfully!")
+    WoW95:Debug("Map styled and registered successfully")
 end
 
 function Windows:CleanupWorldMapReskin(frameName)
@@ -2124,34 +2159,36 @@ function Windows:CleanupWorldMapReskin(frameName)
     -- Get reference to our program window before clearing it
     local programWindow = self.programWindows[frameName]
     
-    -- Remove our reference
+    -- Remove our reference to allow reopening
     self.programWindows[frameName] = nil
     
-    -- Clean up any custom UI elements we added
-    if WorldMapFrame and WorldMapFrame.wow95MapUI then
-        WorldMapFrame.wow95MapUI:Hide()
+    -- Clean up our custom title bar
+    if WorldMapFrame and WorldMapFrame.wow95Title then
+        WorldMapFrame.wow95Title:Hide()
+        WorldMapFrame.wow95Title = nil
     end
     
-    -- Clean up positioning timers
-    if WorldMapFrame and WorldMapFrame.wow95PositionTimer then
-        WorldMapFrame.wow95PositionTimer:Cancel()
-        WorldMapFrame.wow95PositionTimer = nil
-    end
-    
-    -- Reset WorldMapFrame state
+    -- Clean up any other custom UI elements we added
     if WorldMapFrame then
-        WorldMapFrame.wow95SettingPoint = false
-        WorldMapFrame.wow95PositionLocked = false
+        self:CleanupExistingMapUI()
     end
     
-    -- Notify taskbar with the original WorldMapFrame reference
+    -- Reset frame properties
+    if WorldMapFrame then
+        WorldMapFrame.programName = nil
+        WorldMapFrame.frameName = nil
+        WorldMapFrame.isWoW95Window = nil
+        WorldMapFrame.isProgramWindow = nil
+    end
+    
+    -- Notify taskbar
     if programWindow then
         WoW95:OnWindowClosed(programWindow)
     elseif WorldMapFrame then
         WoW95:OnWindowClosed(WorldMapFrame)
     end
     
-    WoW95:Debug("WorldMapFrame cleanup completed")
+    WoW95:Debug("WorldMapFrame cleanup completed - can reopen now")
 end
 
 function Windows:CleanupQuestLogWindow(frameName)
@@ -2177,7 +2214,7 @@ SlashCmdList["WOW95MAP"] = function()
     WoW95:Print("Manual map reskinning triggered...")
     if WorldMapFrame then
         WoW95:Print("Found WorldMapFrame, applying styling...")
-        WoW95.Windows:ApplyWindows95StyleToWorldMap()
+        WoW95.Windows:ReskinWorldMapFrame("WorldMapFrame", WoW95.PROGRAMS["WorldMapFrame"])
         WoW95:Print("Map styling applied!")
     else
         WoW95:Print("WorldMapFrame not found - try opening the map first")
@@ -2224,7 +2261,7 @@ local function HookMapToggle()
             C_Timer.After(0.1, function()
                 if WorldMapFrame and WorldMapFrame:IsShown() then
                     WoW95:Print("Map is shown, applying Windows 95 styling...")
-                    WoW95.Windows:ApplyWindows95StyleToWorldMap()
+                    WoW95.Windows:ReskinWorldMapFrame("WorldMapFrame", WoW95.PROGRAMS["WorldMapFrame"])
                     
                     -- Ensure map stays visible after styling
                     WorldMapFrame:SetAlpha(1)
@@ -2245,27 +2282,98 @@ end
 -- Try to hook the map toggle when this module loads
 C_Timer.After(2, HookMapToggle)
 
-function Windows:ApplyWindows95StyleToWorldMap()
+function Windows:ApplyCompactMapStyle()
     if not WorldMapFrame then return end
     
-    WoW95:Debug("Completely replacing WorldMapFrame UI with Windows 95 theme...")
+    WoW95:Debug("Applying compact map style focused on map display...")
     
-    -- Disable all zoom functionality
-    self:DisableMapZoom()
+    -- Clear any existing custom UI
+    self:CleanupExistingMapUI()
     
-    -- STEP 1: Hide EVERYTHING from Blizzard's UI except the actual map canvas
-    self:HideAllBlizzardMapUI()
+    -- Hide unnecessary Blizzard UI elements but keep the map
+    self:HideNonEssentialMapElements()
     
-    -- STEP 2: Create our own Windows 95 UI framework
-    self:CreateWindows95MapFramework()
+    -- Ensure the map canvas is visible and properly sized
+    self:SetupMapCanvas()
     
-    -- STEP 3: Ensure the map canvas is visible and properly positioned
-    self:EnsureMapCanvasVisible()
+    -- Add minimal Windows 95 styling
+    self:AddMinimalMapStyling()
     
-    -- STEP 4: Lock the map to prevent jumping
-    self:LockMapPosition()
+    WoW95:Debug("Compact map style applied")
+end
+
+function Windows:CleanupExistingMapUI()
+    if WorldMapFrame.wow95MapUI then
+        WorldMapFrame.wow95MapUI:Hide()
+        WorldMapFrame.wow95MapUI = nil
+    end
+    if WorldMapFrame.wow95MapBG then
+        WorldMapFrame.wow95MapBG:Hide()
+        WorldMapFrame.wow95MapBG = nil
+    end
+end
+
+function Windows:HideNonEssentialMapElements()
+    -- Hide side panel, borders, but keep the actual map
+    local elementsToHide = {
+        "BorderFrame", "NavBar", "SidePanelToggle", 
+        "TitleContainer", "BlackoutFrame"
+    }
     
-    WoW95:Debug("Complete Windows 95 map UI replacement finished")
+    for _, elementName in ipairs(elementsToHide) do
+        if WorldMapFrame[elementName] then
+            WorldMapFrame[elementName]:Hide()
+        end
+    end
+end
+
+function Windows:SetupMapCanvas()
+    if not WorldMapFrame.ScrollContainer then
+        WoW95:Debug("ScrollContainer not found - map may not display properly")
+        return
+    end
+    
+    local canvas = WorldMapFrame.ScrollContainer
+    
+    -- Make sure the map canvas fills the window and is visible
+    canvas:ClearAllPoints()
+    canvas:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 8, -30)
+    canvas:SetPoint("BOTTOMRIGHT", WorldMapFrame, "BOTTOMRIGHT", -8, 8)
+    canvas:SetScale(1)
+    canvas:Show()
+    canvas:SetAlpha(1)
+    canvas:EnableMouse(true)
+    
+    WoW95:Debug("Map canvas positioned to fill window")
+end
+
+function Windows:AddMinimalMapStyling()
+    -- Add just a simple title bar to make it look like Windows 95
+    if not WorldMapFrame.wow95Title then
+        local titleBar = CreateFrame("Frame", nil, WorldMapFrame, "BackdropTemplate")
+        titleBar:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 0, 0)
+        titleBar:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", 0, 0)
+        titleBar:SetHeight(25)
+        
+        titleBar:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1
+        })
+        titleBar:SetBackdropColor(unpack(WoW95.colors.titleBar))
+        titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+        
+        local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        titleText:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+        titleText:SetText("World Map - WoW95")
+        titleText:SetTextColor(1, 1, 1, 1)
+        titleText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        titleText:SetShadowOffset(1, -1)
+        
+        WorldMapFrame.wow95Title = titleBar
+    end
 end
 
 function Windows:DisableMapZoom()
@@ -2329,6 +2437,7 @@ function Windows:LockMapPosition()
     end
 end
 
+--[[ OLD COMPLEX MAP SYSTEM - REPLACED WITH SIMPLER VERSION
 function Windows:HideAllBlizzardMapUI()
     WoW95:Debug("Hiding all Blizzard UI elements...")
     
@@ -2384,7 +2493,9 @@ function Windows:HideAllBlizzardMapUI()
     
     WoW95:Debug("Blizzard UI hidden")
 end
+--]]
 
+--[[ 
 function Windows:CreateWindows95MapFramework()
     WoW95:Debug("Creating complete Windows 95 map interface...")
     
@@ -2421,7 +2532,9 @@ function Windows:CreateWindows95MapFramework()
     
     WoW95:Debug("Windows 95 map framework created")
 end
+--]]
 
+--[[ OLD MAP FUNCTIONS - NOT USED ANYMORE
 function Windows:EnsureMapCanvasVisible()
     WoW95:Debug("Ensuring map canvas is visible...")
     
@@ -5350,6 +5463,8 @@ function Windows:GetProgramInfo(frameName)
     return self.PROGRAMS[frameName]
 end
 
+--]]
+
 -- Quest Log Window
 function Windows:CreateQuestLogWindow(frameName, program)
     -- Hide any Blizzard quest log first
@@ -6195,5 +6310,31 @@ SlashCmdList["WOW95WIN"] = function(msg)
     end
 end
 
+-- Debug command to check current state
+SLASH_WOW95WINDEBUG1 = "/wow95windebug"
+SlashCmdList["WOW95WINDEBUG"] = function(msg)
+    WoW95:Print("=== WoW95 Windows Debug Info ===")
+    WoW95:Print("Windows module initialized: " .. tostring(Windows.isInitialized))
+    
+    local windowCount = 0
+    for frameName, window in pairs(Windows.programWindows) do
+        windowCount = windowCount + 1
+        local isShown = window:IsShown() and "YES" or "NO"
+        WoW95:Print("Window " .. frameName .. ": " .. isShown)
+    end
+    WoW95:Print("Total open windows: " .. windowCount)
+    
+    WoW95:Print("Available programs:")
+    for frameName, program in pairs(Windows.PROGRAMS) do
+        local blizzFrame = _G[frameName]
+        local exists = blizzFrame and "EXISTS" or "MISSING"
+        local hooked = (blizzFrame and blizzFrame.WoW95ShowHooked) and "HOOKED" or "NOT HOOKED"
+        local shown = (blizzFrame and blizzFrame:IsShown()) and "SHOWN" or "HIDDEN"
+        WoW95:Print("  " .. frameName .. " (" .. program.name .. "): " .. exists .. ", " .. hooked .. ", " .. shown)
+    end
+end
+
 -- Register the module
+print("[WoW95] Attempting to register Windows module...")
 WoW95:RegisterModule("Windows", Windows)
+print("[WoW95] Windows module registration completed.")

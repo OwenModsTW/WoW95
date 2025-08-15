@@ -89,6 +89,7 @@ function WoW95:CreateWindow(name, parent, width, height, title)
     })
     titleBar:SetBackdropColor(unpack(self.colors.titleBar))
     titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    WoW95:Debug("Standard window title bar color set to: " .. table.concat(self.colors.titleBar, ", "))
     
     -- Title text
     local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -107,7 +108,7 @@ function WoW95:CreateWindow(name, parent, width, height, title)
     
     -- Lock button functionality
     lockButton:SetScript("OnClick", function()
-        self:ToggleWindowLock(frame)
+        WoW95:ToggleWindowLock(frame)
     end)
     
     -- Lock button hover effects
@@ -130,7 +131,7 @@ function WoW95:CreateWindow(name, parent, width, height, title)
     -- Close button functionality
     closeButton:SetScript("OnClick", function()
         frame:Hide()
-        self:OnWindowClosed(frame)
+        WoW95:OnWindowClosed(frame)
     end)
     
     -- Make frame movable (required for StartMoving to work)
@@ -190,7 +191,7 @@ function WoW95:CreateButton(name, parent, width, height, text)
         button:SetBackdropColor(0.85, 0.85, 0.85, 1)
     end)
     button:SetScript("OnLeave", function()
-        button:SetBackdropColor(unpack(self.colors.buttonFace))
+        button:SetBackdropColor(unpack(WoW95.colors.buttonFace))
     end)
     button:SetScript("OnMouseDown", function()
         button:SetBackdropColor(0.6, 0.6, 0.6, 1)
@@ -236,7 +237,11 @@ function WoW95:CreateTitleBarButton(name, parent, texture, size)
         self:SetBackdropColor(0.85, 0.85, 0.85, 1)
     end)
     button:SetScript("OnLeave", function(self)
-        self:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+        if WoW95 and WoW95.colors and WoW95.colors.buttonFace then
+            self:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+        else
+            self:SetBackdropColor(0.75, 0.75, 0.75, 1)
+        end
     end)
     button:SetScript("OnMouseDown", function(self)
         self:SetBackdropColor(0.6, 0.6, 0.6, 1)
@@ -365,6 +370,30 @@ function WoW95:Initialize()
     self:InitializeSettings()
     
     self:Print("Windows 95 UI loaded! Welcome to the past!")
+    
+    -- Create test slash command
+    SLASH_WOW95TEST1 = "/wow95test"
+    SlashCmdList["WOW95TEST"] = function(msg)
+        local count = 0
+        for _ in pairs(WoW95.modules) do count = count + 1 end
+        WoW95:Print("WoW95 is working! Modules registered: " .. count)
+        for name, module in pairs(WoW95.modules) do
+            WoW95:Print("- " .. name)
+        end
+        
+        -- Test window creation
+        if msg == "window" then
+            WoW95:Print("Creating test window...")
+            local testWindow = WoW95:CreateWindow("WoW95TestWindow", UIParent, 300, 200, "Test Window")
+            if testWindow then
+                testWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+                testWindow:Show()
+                WoW95:Print("Test window created successfully!")
+            else
+                WoW95:Print("ERROR: Failed to create test window")
+            end
+        end
+    end
 end
 
 -- Event handler

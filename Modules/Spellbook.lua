@@ -258,5 +258,25 @@ function Spellbook:StyleCloseButton()
     end
 end
 
+function Spellbook:ToggleSpellbook()
+    -- Toggle the spellbook with proper styling
+    if SpellBookFrame then
+        if SpellBookFrame:IsVisible() then
+            SpellBookFrame:Hide()
+        else
+            ShowUIPanel(SpellBookFrame)
+            -- Apply styling after a short delay
+            C_Timer.After(0.1, function()
+                self:ApplyWindows95Skin()
+            end)
+        end
+    else
+        -- Fallback: try the global toggle function
+        if ToggleSpellBook then
+            ToggleSpellBook()
+        end
+    end
+end
+
 -- Register the module
 WoW95:RegisterModule("Spellbook", Spellbook)

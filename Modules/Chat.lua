@@ -334,28 +334,9 @@ function Chat:CreateChatFrame(name, channels, x, y, isMainFrame)
     lockText:SetShadowOffset(0, 0)
     lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
-    -- Create minimize button
-    local minimizeButton = CreateFrame("Button", frameName .. "MinimizeButton", chatWindow.titleBar, "BackdropTemplate")
-    minimizeButton:SetSize(16, 14)
+    -- Create minimize button using custom texture
+    local minimizeButton = WoW95:CreateTitleBarButton(frameName .. "MinimizeButton", chatWindow.titleBar, WoW95.textures.minimize, 16)
     minimizeButton:SetPoint("RIGHT", lockButton, "LEFT", -2, 0)
-    
-    minimizeButton:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileSize = 8,
-        edgeSize = 1,
-        insets = {left = 1, right = 1, top = 1, bottom = 1}
-    })
-    minimizeButton:SetBackdropColor(0.75, 0.75, 0.75, 1)
-    minimizeButton:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
-    
-    local minimizeText = minimizeButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    minimizeText:SetPoint("CENTER")
-    minimizeText:SetText("_")
-    minimizeText:SetTextColor(0, 0, 0, 1)
-    minimizeText:SetShadowOffset(0, 0)
-    minimizeText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
     -- Create new tab button
     local newTabButton = WoW95:CreateButton(frameName .. "NewTabButton", tabContainer, 20, 18, "+")
@@ -1076,15 +1057,9 @@ function Chat:ToggleMinimize(frameData)
         frameData.tabContainer:Show()
         frameData.window:SetHeight(CHAT_HEIGHT)
         
-        -- Find and update minimize button text safely
-        if frameData.minimizeButton then
-            for i = 1, frameData.minimizeButton:GetNumChildren() do
-                local child = select(i, frameData.minimizeButton:GetChildren())
-                if child and child.SetText then
-                    child:SetText("_")
-                    break
-                end
-            end
+        -- Update minimize button texture to minimize icon
+        if frameData.minimizeButton and frameData.minimizeButton.icon then
+            frameData.minimizeButton.icon:SetTexture(WoW95.textures.minimize)
         end
         frameData.isMinimized = false
     else
@@ -1094,15 +1069,9 @@ function Chat:ToggleMinimize(frameData)
         frameData.tabContainer:Hide()
         frameData.window:SetHeight(TITLE_BAR_HEIGHT + 8)
         
-        -- Find and update minimize button text safely
-        if frameData.minimizeButton then
-            for i = 1, frameData.minimizeButton:GetNumChildren() do
-                local child = select(i, frameData.minimizeButton:GetChildren())
-                if child and child.SetText then
-                    child:SetText("□")
-                    break
-                end
-            end
+        -- Update minimize button texture to maximize icon
+        if frameData.minimizeButton and frameData.minimizeButton.icon then
+            frameData.minimizeButton.icon:SetTexture(WoW95.textures.maximize)
         end
         frameData.isMinimized = true
     end

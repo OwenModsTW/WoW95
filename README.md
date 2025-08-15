@@ -5,32 +5,54 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Mac-lightgrey)
 ![Addon](https://img.shields.io/badge/addon-UI%20Overhaul-purple)
 
-A complete UI overhaul for World of Warcraft that brings the nostalgic Windows 95 aesthetic to Azeroth. Experience your favorite MMORPG with authentic retro computing vibes!
+A complete UI overhaul for World of Warcraft that brings the nostalgic Windows 95 aesthetic to Azeroth. Experience your favorite MMORPG with authentic retro computing vibes, complete with custom windows, quest tracking, guild management, and classic Windows 95 styling throughout.
 
-## 🖼️ Features
+## Features
 
-### Core UI Elements
-- **🖥️ Taskbar** - Fully functional Windows 95-style taskbar with Start button, window management, and system tray
-- **📂 Start Menu** - Classic Start menu with organized access to all game functions
-- **🪟 Window System** - All UI panels converted to draggable Windows 95 windows with title bars
-- **🎨 Authentic Styling** - Pixel-perfect recreation of Windows 95 visual elements
+### Core Framework
+- **Windows 95 Color Scheme** - Authentic gray backgrounds with blue title bars
+- **Custom Window Creation** - Standardized window system with draggable title bars
+- **Button Textures** - Custom close, minimize, and maximize button graphics
+- **Module Registration** - Organized, modular architecture for easy development
 
-### Modules Included
-- **Action Bars** - Retro-styled action bars with classic button appearance
-- **Bags** - Inventory management with Windows 95 window styling
-- **Chat** - Chat windows with classic borders and styling
-- **Minimap** - Square minimap with Windows 95 frame
-- **Quest Tracker** - Redesigned quest tracker with expandable/collapsible sections
-- **Spellbook** - Classic spellbook interface with tab navigation
-- **Tooltips** - Windows 95-styled tooltips
-- **Character Panel** - Complete character information window
+### Implemented Modules
 
-### Bonus Features
-- **🎮 Built-in Games** - Includes classic Minesweeper for those flight path waits!
-- **🗺️ Map Overhaul** - World map with Windows 95 styling and navigation
-- **⚙️ Micro Menu** - Redesigned system menu with classic styling
+#### Quest Tracker
+- **Custom Windows 95 Styling** - Replaces default Blizzard objective tracker
+- **Three-Section Layout** - All Objectives, Campaign, and Quests sections
+- **Clickable Quest Icons** - Yellow (active), gray (tracked), dark (untracked)
+- **Dynamic Sizing** - Campaign section auto-sizes based on content
+- **Minimize/Maximize Controls** - Independent section controls with custom textures
 
-## 📦 Installation
+#### Minimap
+- **Square Windows 95 Frame** - Authentic retro styling with proper borders
+- **Addon Button Collection** - Popup system to organize minimap buttons
+- **Lock/Unlock Toggle** - Prevents accidental movement when locked
+- **Proper Icon Positioning** - All system buttons correctly spaced (20px)
+
+#### Guild & Communities Window
+- **Comprehensive Guild Management** - Full roster with advanced features
+- **Class-Colored Backgrounds** - Member rows colored by class (30% alpha online, 15% offline)
+- **Death Knight Support** - Manual color fallback for proper DK representation
+- **Tabbed Interface** - Roster, Guild Info, News, Perks, Communities
+- **Officer Controls** - Invite, promote, demote, remove (permission-based)
+- **Member Details Panel** - Selection-based detailed member information
+- **Show/Hide Offline** - Filter controls for member visibility
+
+#### Windows Core
+- **Frame Lifecycle Management** - Proper window creation and cleanup
+- **Blizzard UI Integration** - Hooks into existing game windows
+- **Toggle Behavior** - Hotkeys work to open and close windows
+- **Program Window Tracking** - Maintains state of all open windows
+
+### Current Status
+- **Quest Tracker**: Complete with enhanced features
+- **Minimap**: Complete (minimize removed to prevent outline issues)
+- **Guild Window**: Complete with advanced guild management
+- **Windows Core**: Complete with frame hooking system
+- **Other Modules**: Various stages of development
+
+## Installation
 
 1. Download the latest release from the [Releases](https://github.com/OwenModsTW/WoW95/releases) page
 2. Extract the `WoW95` folder to your WoW AddOns directory:
@@ -39,70 +61,84 @@ A complete UI overhaul for World of Warcraft that brings the nostalgic Windows 9
 3. Launch World of Warcraft
 4. The addon should be enabled by default in your AddOns list
 
-## 🎮 Usage
+## Usage
 
-Once installed, WoW95 automatically replaces your default UI. Key features:
+Once installed, WoW95 enhances your UI with Windows 95 styling:
 
-- **Start Menu**: Click the Start button in the bottom-left corner
-- **Window Management**: All windows can be dragged by their title bars
-- **Taskbar**: Shows all open windows, click to focus/minimize
-- **Games**: Access Minesweeper from Start Menu → Games
+- **Quest Tracker**: Automatically replaces the default objective tracker
+- **Guild Window**: Opens when accessing guild features with enhanced management
+- **Minimap**: Square frame with Windows 95 styling and button organization
+- **Window Management**: All custom windows can be dragged by their title bars
 
 ### Slash Commands
-- `/wow95` - Main addon commands
-- `/wow95test` - Test window system
-- `/wow95map` - Map debugging
+- `/wow95test` - Test core addon functionality and modules
+- `/wow95guildtest` - Debug guild window and class colors
+- `/wow95windebug` - Check window system status
 
-## ⚙️ Configuration
+## Configuration
 
 WoW95 saves your settings in the `WoW95DB` saved variable. Window positions and settings persist between sessions.
 
-## 🛠️ Development
+### Guild Window Settings
+- **Show Offline Members**: Toggle to display offline guild members
+- **Class Colors**: Automatically applied to member row backgrounds
+- **Officer Controls**: Available based on your guild permissions
+
+## Development
 
 ### File Structure
 ```
 WoW95/
-├── WoW95.lua           # Core addon framework
-├── WoW95.toc           # Table of contents
+├── WoW95.lua                    # Core addon framework
+├── WoW95.toc                    # Table of contents
+├── CLAUDE.md                    # Development documentation
 ├── Modules/
-│   ├── ActionBars.lua  # Action bar styling
-│   ├── Bags.lua        # Inventory windows
-│   ├── Chat.lua        # Chat frame styling
-│   ├── Games.lua       # Built-in games
-│   ├── Minimap.lua     # Minimap frame
-│   ├── QuestTracker.lua # Quest tracking
-│   ├── Spellbook.lua   # Spellbook interface
-│   ├── StartMenu.lua   # Start menu system
-│   ├── Taskbar.lua     # Taskbar implementation
-│   ├── Tooltip.lua     # Tooltip styling
-│   └── Windows.lua     # Window management
+│   ├── QuestTracker.lua         # Enhanced quest tracking system
+│   ├── Minimap.lua              # Square minimap with Windows 95 styling
+│   ├── Windows/
+│   │   ├── WindowsCore.lua      # Core window management
+│   │   ├── GuildWindow.lua      # Guild & Communities interface
+│   │   ├── SocialWindows.lua    # Social window delegation
+│   │   └── MapWindow.lua        # Map window integration
+│   ├── ActionBars.lua           # Action bar styling (in development)
+│   ├── Bags.lua                 # Inventory windows (in development)
+│   ├── Chat.lua                 # Chat frame styling (in development)
+│   ├── StartMenu.lua            # Start menu system (in development)
+│   ├── Taskbar.lua              # Taskbar implementation (in development)
+│   └── Tooltip.lua              # Tooltip styling (in development)
 └── Media/
-    ├── xclose.tga      # Close button texture
-    ├── minimise.tga    # Minimize button texture
-    ├── maximize.tga    # Maximize button texture
-    └── startbutton.tga # Start button texture
+    ├── xclose.tga               # Close button texture
+    ├── minimise.tga             # Minimize button texture
+    ├── maximize.tga             # Maximize button texture
+    └── startbutton.tga          # Start button texture
 ```
+
+### Key APIs Used
+- **C_SuperTrack** - Modern quest tracking API
+- **C_GuildInfo** - Guild roster management
+- **RAID_CLASS_COLORS** - WoW class color definitions
+- **Frame Hooking** - Integration with Blizzard UI
 
 ### Contributing
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
 
-## 📝 License
+## License
 
 This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License - see the [LICENSE](LICENSE) file for details.
 
 **Note**: This addon is free for personal use but cannot be sold or used commercially. Any modifications must be shared under the same license.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by Microsoft Windows 95
 - Built for the World of Warcraft community
 - Special thanks to all contributors and testers
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/OwenModsTW/WoW95/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/OwenModsTW/WoW95/discussions)
 
 ---
 
-*Bringing 1995 to Azeroth, one window at a time!* 🪟✨
+*Bringing 1995 to Azeroth, one window at a time!*

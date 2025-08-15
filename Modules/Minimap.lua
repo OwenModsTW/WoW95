@@ -99,7 +99,7 @@ function Minimap:CreateMinimapFrame()
     
     -- No minimize button - keep minimap always visible
     
-    -- Create lock button
+    -- Create lock button - using text fallback since we don't have lock texture yet
     local lockButton = CreateFrame("Button", "WoW95MinimapLockButton", self.titleBar, "BackdropTemplate")
     lockButton:SetSize(16, 14)
     lockButton:SetPoint("RIGHT", self.titleBar, "RIGHT", -2, 0)
@@ -117,7 +117,7 @@ function Minimap:CreateMinimapFrame()
     
     local lockText = lockButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     lockText:SetPoint("CENTER")
-    lockText:SetText("🔓") -- Unlocked by default
+    lockText:SetText("L") -- Simple L for Lock
     lockText:SetTextColor(0, 0, 0, 1)
     lockText:SetShadowOffset(0, 0)
     lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
@@ -129,7 +129,7 @@ function Minimap:CreateMinimapFrame()
     lockButton:SetScript("OnEnter", function()
         lockButton:SetBackdropColor(0.85, 0.85, 0.85, 1)
         GameTooltip:SetOwner(lockButton, "ANCHOR_TOP")
-        GameTooltip:SetText(self.locked and "Unlock Map" or "Lock Map")
+        GameTooltip:SetText(self.locked and "Unlock Minimap" or "Lock Minimap")
         GameTooltip:Show()
     end)
     

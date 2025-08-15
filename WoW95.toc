@@ -28,7 +28,18 @@ Modules\QuestTracker.lua
 Modules\Spellbook.lua
 Modules\Tooltip.lua
 # Modules\TimeDate.lua
-Modules\Windows.lua
+
+# Windows Module System (Modular Architecture)
+Modules\Windows\WindowsCore.lua
+Modules\Windows\CharacterWindow.lua
+Modules\Windows\MapWindow.lua
+Modules\Windows\GuildWindow.lua
+Modules\Windows\QuestWindow.lua
+Modules\Windows\AchievementsWindow.lua
+Modules\Windows\SocialWindows.lua
+Modules\Windows\SystemWindows.lua
+# Modules\Windows.lua  # OLD - Commented out to prevent conflicts
+
 Modules\Games.lua
 
 # Localization Files (optional for future)
