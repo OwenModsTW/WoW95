@@ -1,0 +1,6169 @@
+-- WoW95 Windows Module
+-- Creates Windows 95 style program windows for Blizzard UI
+
+local addonName, WoW95 = ...
+
+local Windows = {}
+WoW95.Windows = Windows
+
+-- Windows state
+Windows.isInitialized = false
+Windows.programWindows = {}
+
+-- Program definitions for Blizzard UI windows (MOVED TO SHARED LOCATION)
+Windows.PROGRAMS = {
+    -- Character & Equipment
+    ["CharacterFrame"] = {
+        name = "Character Sheet", 
+        icon = {1, 1, 0, 1}, 
+        tooltip = "Character Information",
+        window = {width = 500, height = 600, title = "Character - World of Warcraft"}
+    },
+    -- Disabled SpellBookFrame to use custom spellbook module
+    -- ["SpellBookFrame"] = {
+    --     name = "Spellbook", 
+    --     icon = {0.5, 0, 1, 1}, 
+    --     tooltip = "Spells & Abilities",
+    --     window = {width = 450, height = 600, title = "Spellbook - World of Warcraft"}
+    -- },
+    -- Disabled TalentFrame to use custom spellbook module
+    -- ["TalentFrame"] = {
+    --     name = "Talents", 
+    --     icon = {0, 1, 0, 1}, 
+    --     tooltip = "Talents & Specialization",
+    --     window = {width = 500, height = 400, title = "Talents - World of Warcraft"}
+    -- },
+    
+    -- Social & Guild
+    ["GuildFrame"] = {
+        name = "Guild", 
+        icon = {0, 0.5, 1, 1}, 
+        tooltip = "Guild Management",
+        window = {width = 600, height = 500, title = "Guild - World of Warcraft"}
+    },
+    ["FriendsFrame"] = {
+        name = "Social", 
+        icon = {1, 0.5, 0.8, 1}, 
+        tooltip = "Friends & Social",
+        window = {width = 450, height = 400, title = "Social - World of Warcraft"}
+    },
+    ["LFGParentFrame"] = {
+        name = "Group Finder", 
+        icon = {0.8, 0.8, 0, 1}, 
+        tooltip = "Group Finder",
+        window = {width = 500, height = 450, title = "Group Finder - World of Warcraft"}
+    },
+    ["PVPUIFrame"] = {
+        name = "Player vs Player", 
+        icon = {1, 0, 0, 1}, 
+        tooltip = "Player vs Player",
+        window = {width = 550, height = 500, title = "PvP - World of Warcraft"}
+    },
+    
+    -- Adventure & Quests
+    ["WorldMapFrame"] = {
+        name = "World Map", 
+        icon = {0.6, 0.3, 0, 1}, 
+        tooltip = "World Map",
+        window = {width = 700, height = 500, title = "Map - World of Warcraft"}
+    },
+    ["QuestLogFrame"] = {
+        name = "Quest Log", 
+        icon = {1, 1, 0.3, 1}, 
+        tooltip = "Quest Log",
+        window = {width = 700, height = 500, title = "Quest Log - World of Warcraft"}
+    },
+    ["AchievementFrame"] = {
+        name = "Achievements", 
+        icon = {1, 0.8, 0, 1}, 
+        tooltip = "Achievements",
+        window = {width = 600, height = 500, title = "Achievements - World of Warcraft"}
+    },
+    ["EncounterJournal"] = {
+        name = "Dungeon Journal", 
+        icon = {0.4, 0.2, 0, 1}, 
+        tooltip = "Dungeon Journal",
+        window = {width = 550, height = 500, title = "Dungeon Journal - World of Warcraft"}
+    },
+    
+    -- Systems & Settings
+    ["GameMenuFrame"] = {
+        name = "Game Menu", 
+        icon = {0.5, 0.5, 0.5, 1}, 
+        tooltip = "Game Menu",
+        window = {width = 300, height = 400, title = "Game Menu - World of Warcraft"}
+    },
+    ["InterfaceOptionsFrame"] = {
+        name = "Interface Options", 
+        icon = {0.3, 0.3, 0.3, 1}, 
+        tooltip = "Interface Options",
+        window = {width = 550, height = 500, title = "Interface Options - World of Warcraft"}
+    },
+    ["VideoOptionsFrame"] = {
+        name = "System", 
+        icon = {0, 0.8, 0.8, 1}, 
+        tooltip = "System Options",
+        window = {width = 500, height = 450, title = "System - World of Warcraft"}
+    },
+    
+    -- Collections
+    ["CollectionsJournal"] = {
+        name = "Collections", 
+        icon = {0.7, 0.3, 0.7, 1}, 
+        tooltip = "Collections",
+        window = {width = 550, height = 500, title = "Collections - World of Warcraft"}
+    },
+    ["MailFrame"] = {
+        name = "Mail", 
+        icon = {1, 1, 1, 1}, 
+        tooltip = "Mailbox",
+        window = {width = 450, height = 400, title = "Mail - World of Warcraft"}
+    },
+}
+
+function Windows:Init()
+    WoW95:Debug("Initializing Windows module...")
+    
+    -- Make program definitions available globally
+    WoW95.PROGRAMS = self.PROGRAMS
+    
+    -- Delay frame hooking to ensure UI is loaded
+    C_Timer.After(1, function()
+        WoW95:Print("WoW95 Windows: Initializing window hooks...")
+        self:HookBlizzardWindows()
+    end)
+    
+    self.isInitialized = true
+    WoW95:Debug("Windows module initialized successfully!")
+end
+
+function Windows:CreateCharacterWindow(name, parent, width, height, title)
+    local frame = CreateFrame("Frame", name, parent or UIParent, "BackdropTemplate")
+    
+    -- Set size
+    frame:SetSize(width or 300, height or 200)
+    
+    -- Create the main window backdrop (solid gray)
+    frame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    frame:SetBackdropColor(0.75, 0.75, 0.75, 1) -- Solid Windows 95 gray
+    frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create title bar
+    local titleBar = CreateFrame("Frame", name .. "TitleBar", frame, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
+    titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
+    titleBar:SetHeight(20)
+    
+    -- Title bar backdrop with our blue color
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    titleBar:SetBackdropColor(0.0, 0.0, 0.5, 1) -- Direct blue color
+    titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    -- Title text
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
+    titleText:SetText(title or "Window")
+    titleText:SetTextColor(unpack(WoW95.colors.titleBarText))
+    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    
+    -- Only close button (no lock button)
+    local closeButton = WoW95:CreateTitleBarButton(name .. "CloseButton", titleBar, WoW95.textures.close, 16)
+    closeButton:SetPoint("RIGHT", titleBar, "RIGHT", -2, 0)
+    
+    -- Close button functionality
+    closeButton:SetScript("OnClick", function()
+        frame:Hide()
+        -- Notify window closed through the Windows module
+        if Windows then
+            Windows:OnCharacterWindowClosed(frame)
+        end
+        WoW95:OnWindowClosed(frame)
+    end)
+    
+    -- Make frame movable (required for StartMoving to work)
+    frame:SetMovable(true)
+    frame:SetClampedToScreen(true)
+    
+    -- Make title bar draggable
+    titleBar:EnableMouse(true)
+    titleBar:RegisterForDrag("LeftButton")
+    titleBar:SetScript("OnDragStart", function()
+        frame:StartMoving()
+    end)
+    titleBar:SetScript("OnDragStop", function()
+        frame:StopMovingOrSizing()
+    end)
+    
+    -- Store references
+    frame.titleBar = titleBar
+    frame.titleText = titleText
+    frame.closeButton = closeButton
+    frame.isWoW95Window = true
+    
+    -- Add hide script to clean up tracking when window is hidden by any means
+    frame:SetScript("OnHide", function()
+        if Windows then
+            Windows:OnCharacterWindowClosed(frame)
+        end
+    end)
+    
+    return frame
+end
+
+function Windows:CreateCharacterInfoWindow(frameName, program)
+    -- Don't create duplicate windows - show existing one if it exists
+    if self.programWindows[frameName] then 
+        WoW95:Debug("Character Info window already exists, showing it")
+        local existingWindow = self.programWindows[frameName]
+        if not existingWindow:IsShown() then
+            existingWindow:Show()
+            WoW95:OnWindowOpened(existingWindow)
+        end
+        return existingWindow
+    end
+    
+    WoW95:Debug("Creating custom Character Info window")
+    
+    -- Create the main character info window (custom without lock button)
+    local programWindow = self:CreateCharacterWindow(
+        "WoW95CharacterInfo", 
+        UIParent, 
+        750, 
+        500, 
+        "Character Information - World of Warcraft"
+    )
+    
+    -- Position window
+    programWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    
+    -- Character Info specific data
+    programWindow.currentTab = "equipment"
+    programWindow.tabs = {}
+    programWindow.tabContent = {}
+    programWindow.equipmentSlots = {}
+    
+    -- Tab definitions
+    local TABS = {
+        {id = "equipment", name = "Equipment", icon = "Interface\\Icons\\INV_Chest_Cloth_17"},
+        {id = "reputation", name = "Reputation", icon = "Interface\\Icons\\Achievement_Reputation_01"},
+        {id = "currency", name = "Currency", icon = "Interface\\Icons\\INV_Misc_Coin_01"}
+    }
+    
+    -- Equipment slot data (positioned to surround the 3D model in center)
+    local EQUIPMENT_SLOTS = {
+        -- Left side slots (moved up to start right after tabs)
+        {slot = 1, name = "Head", pos = {x = 15, y = -15}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Head"},
+        {slot = 2, name = "Neck", pos = {x = 15, y = -60}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Neck"},
+        {slot = 3, name = "Shoulder", pos = {x = 15, y = -105}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Shoulder"},
+        {slot = 15, name = "Back", pos = {x = 15, y = -150}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Chest"},
+        {slot = 5, name = "Chest", pos = {x = 15, y = -195}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Chest"},
+        {slot = 4, name = "Shirt", pos = {x = 15, y = -240}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Shirt"},
+        {slot = 19, name = "Tabard", pos = {x = 15, y = -285}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Tabard"},
+        {slot = 9, name = "Wrist", pos = {x = 15, y = -330}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Wrists"},
+        
+        -- Right side slots (moved up to start right after tabs)
+        {slot = 10, name = "Hands", pos = {x = 365, y = -15}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Hands"},
+        {slot = 6, name = "Waist", pos = {x = 365, y = -60}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Waist"},
+        {slot = 7, name = "Legs", pos = {x = 365, y = -105}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Legs"},
+        {slot = 8, name = "Feet", pos = {x = 365, y = -150}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Feet"},
+        {slot = 11, name = "Finger 1", pos = {x = 365, y = -195}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Finger"},
+        {slot = 12, name = "Finger 2", pos = {x = 365, y = -240}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Finger"},
+        {slot = 13, name = "Trinket 1", pos = {x = 365, y = -285}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Trinket"},
+        {slot = 14, name = "Trinket 2", pos = {x = 365, y = -330}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Trinket"},
+        
+        -- Weapons (center bottom, positioned to fit within window with proper spacing)
+        {slot = 16, name = "Main Hand", pos = {x = 150, y = -350}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-MainHand"},
+        {slot = 17, name = "Off Hand", pos = {x = 250, y = -350}, icon = "Interface\\PaperDoll\\UI-PaperDoll-Slot-SecondaryHand"}
+    }
+    
+    -- Create tab bar
+    local tabBar = CreateFrame("Frame", nil, programWindow, "BackdropTemplate")
+    tabBar:SetPoint("TOPLEFT", programWindow, "TOPLEFT", 8, -50)
+    tabBar:SetPoint("TOPRIGHT", programWindow, "TOPRIGHT", -8, -50)
+    tabBar:SetHeight(30)
+    
+    -- Tab bar background
+    tabBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    tabBar:SetBackdropColor(0.7, 0.7, 0.7, 1)
+    tabBar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create tabs
+    local tabWidth = 120
+    for i, tabData in ipairs(TABS) do
+        local tab = CreateFrame("Button", nil, tabBar, "BackdropTemplate")
+        tab:SetSize(tabWidth, 25)
+        tab:SetPoint("LEFT", tabBar, "LEFT", (i-1) * tabWidth + 5, 0)
+        
+        -- Tab backdrop
+        tab:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 1, right = 1, top = 1, bottom = 1}
+        })
+        tab:SetBackdropColor(0.75, 0.75, 0.75, 1)
+        tab:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+        
+        -- Tab text
+        local tabText = tab:CreateFontString(nil, "OVERLAY")
+        tabText:SetPoint("CENTER", tab, "CENTER", 0, 0)
+        tabText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        tabText:SetText(tabData.name)
+        tabText:SetTextColor(0, 0, 0, 1)
+        
+        -- Tab click handler
+        tab:SetScript("OnClick", function()
+            self:ShowCharacterTab(programWindow, tabData.id)
+        end)
+        
+        -- Tab hover effects
+        tab:SetScript("OnEnter", function(self)
+            if tabData.id ~= programWindow.currentTab then
+                self:SetBackdropColor(0.85, 0.85, 0.85, 1)
+            end
+        end)
+        
+        tab:SetScript("OnLeave", function(self)
+            if tabData.id ~= programWindow.currentTab then
+                self:SetBackdropColor(0.75, 0.75, 0.75, 1)
+            end
+        end)
+        
+        tab.tabData = tabData
+        tab.text = tabText
+        programWindow.tabs[tabData.id] = tab
+    end
+    
+    -- Create content area
+    local contentArea = CreateFrame("Frame", nil, programWindow, "BackdropTemplate")
+    contentArea:SetPoint("TOPLEFT", tabBar, "BOTTOMLEFT", 0, -2)
+    contentArea:SetPoint("BOTTOMRIGHT", programWindow, "BOTTOMRIGHT", -8, 8)
+    
+    -- Content area background
+    contentArea:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    contentArea:SetBackdropColor(1, 1, 1, 1) -- White background
+    contentArea:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create content frames for each tab
+    for _, tabData in ipairs(TABS) do
+        local content = CreateFrame("Frame", nil, contentArea)
+        content:SetAllPoints(contentArea)
+        content:Hide() -- Initially hidden
+        programWindow.tabContent[tabData.id] = content
+    end
+    
+    programWindow.contentArea = contentArea
+    programWindow.tabBar = tabBar
+    programWindow.EQUIPMENT_SLOTS = EQUIPMENT_SLOTS
+    
+    -- Show initial tab (Equipment)
+    self:ShowCharacterTab(programWindow, "equipment")
+    
+    -- Set properties for taskbar recognition
+    programWindow.programName = program.name
+    programWindow.frameName = frameName
+    programWindow.isWoW95Window = true
+    programWindow.isProgramWindow = true
+    
+    -- Store reference
+    self.programWindows[frameName] = programWindow
+    
+    -- Add a custom hide script to ensure proper cleanup when closed by other means
+    programWindow:HookScript("OnHide", function()
+        -- Only clean up if we still have a reference (avoid double cleanup)
+        if self.programWindows[frameName] == programWindow then
+            WoW95:Debug("Character window hidden, cleaning up tracking")
+            self.programWindows[frameName] = nil
+            -- Ensure the Blizzard frame is also hidden to prevent state mismatch
+            local blizzardFrame = _G[frameName]
+            if blizzardFrame and blizzardFrame:IsShown() then
+                blizzardFrame:Hide()
+            end
+        end
+    end)
+    
+    -- Show the window
+    programWindow:Show()
+    
+    -- Notify taskbar
+    WoW95:OnWindowOpened(programWindow)
+    
+    return programWindow
+end
+
+function Windows:OnCharacterWindowClosed(frame)
+    -- Clear the character frame from programWindows when closed
+    if self.programWindows["CharacterFrame"] == frame then
+        self.programWindows["CharacterFrame"] = nil
+        WoW95:Debug("Character window removed from tracking")
+    end
+end
+
+function Windows:ShowCharacterTab(programWindow, tabId)
+    -- Hide all tab content and disable mouse interaction
+    for id, content in pairs(programWindow.tabContent) do
+        content:Hide()
+        -- Recursively disable mouse events for all child frames
+        local function DisableMouseForChildren(frame)
+            if frame.EnableMouse then
+                frame:EnableMouse(false)
+            end
+            for _, child in pairs({frame:GetChildren()}) do
+                DisableMouseForChildren(child)
+            end
+        end
+        DisableMouseForChildren(content)
+    end
+    
+    -- Update tab appearances
+    for id, tab in pairs(programWindow.tabs) do
+        if id == tabId then
+            tab:SetBackdropColor(1, 1, 1, 1) -- White for active tab
+            tab:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        else
+            tab:SetBackdropColor(0.75, 0.75, 0.75, 1) -- Gray for inactive tabs
+            tab:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+        end
+    end
+    
+    -- Show selected tab content and enable mouse interaction
+    if programWindow.tabContent[tabId] then
+        local activeContent = programWindow.tabContent[tabId]
+        activeContent:Show()
+        programWindow.currentTab = tabId
+        
+        -- Re-enable mouse events for the active tab content
+        local function EnableMouseForChildren(frame)
+            if frame.EnableMouse then
+                -- Enable mouse if explicitly marked as needing mouse, or if not explicitly disabled
+                if frame.WoW95ShouldHaveMouse == true or frame.WoW95ShouldHaveMouse == nil then
+                    frame:EnableMouse(true)
+                end
+            end
+            for _, child in pairs({frame:GetChildren()}) do
+                EnableMouseForChildren(child)
+            end
+        end
+        EnableMouseForChildren(activeContent)
+        
+        -- Create content if not already created
+        if tabId == "equipment" and not activeContent.contentCreated then
+            self:CreateEquipmentTab(programWindow)
+        elseif tabId == "reputation" and not activeContent.contentCreated then
+            self:CreateReputationTab(programWindow)
+        elseif tabId == "currency" and not activeContent.contentCreated then
+            self:CreateCurrencyTab(programWindow)
+        end
+    end
+    
+    WoW95:Debug("Switched to character tab: " .. tabId)
+end
+
+function Windows:CreateEquipmentTab(programWindow)
+    local content = programWindow.tabContent["equipment"]
+    if not content then return end
+    
+    WoW95:Debug("Creating Equipment tab content")
+    
+    -- Character model area (positioned between equipment columns in the white content area)
+    -- No backdrop - blends with white background
+    local modelFrame = CreateFrame("Frame", nil, content)
+    modelFrame:SetSize(200, 330)
+    -- Left column items at x=15, with 40px wide slots, so right edge = 15+40 = 55
+    -- Right column items at x=365, so gap is from 55 to 365 = 310px wide
+    -- Center of gap = 55 + (310/2) = 55 + 155 = 210
+    -- Model is 200px wide, so position at 210 - 100 = 110 to center it
+    -- Position in the white content area below the tabs
+    modelFrame:SetPoint("TOPLEFT", content, "TOPLEFT", 110, -20)
+    
+    -- Player model (3D character view)
+    local playerModel = CreateFrame("PlayerModel", nil, modelFrame)
+    playerModel:SetAllPoints(modelFrame)
+    
+    -- Set the model to show the player character
+    playerModel:SetUnit("player")
+    playerModel:SetRotation(0.6) -- Slight rotation for better view
+    
+    -- Camera position adjustment (zoom out more and center better to prevent clipping)
+    playerModel:SetCamDistanceScale(0.9)
+    playerModel:SetPosition(0, 0, -0.1)
+    
+    -- Enable model interaction for spinning
+    playerModel:EnableMouse(true)
+    playerModel:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" then
+            self.isRotating = true
+            self.lastCursorX = GetCursorPosition()
+        end
+    end)
+    
+    playerModel:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" then
+            self.isRotating = false
+        end
+    end)
+    
+    playerModel:SetScript("OnUpdate", function(self, elapsed)
+        if self.isRotating then
+            local cursorX = GetCursorPosition()
+            local deltaX = (cursorX - (self.lastCursorX or cursorX)) * 0.01
+            local currentRotation = self:GetFacing() or 0
+            self:SetRotation(currentRotation + deltaX)
+            self.lastCursorX = cursorX
+        end
+    end)
+    
+    -- Add tooltip for model interaction
+    playerModel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("3D Character Model")
+        GameTooltip:AddLine("Click and drag to rotate", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    
+    playerModel:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
+    
+    -- Equipment slots
+    self:CreateEquipmentSlots(programWindow, content)
+    
+    -- Stats panel (right side)
+    self:CreateStatsPanel(content)
+    
+    content.contentCreated = true
+    
+    -- Store reference to player model for refresh
+    programWindow.playerModel = playerModel
+    
+    -- Set up event handling for equipment changes
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+    eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+    eventFrame:SetScript("OnEvent", function(self, event, ...)
+        C_Timer.After(0.1, function()
+            if programWindow.equipmentSlots then
+                Windows:RefreshCharacterEquipment(programWindow)
+            end
+        end)
+    end)
+    programWindow.eventFrame = eventFrame
+end
+
+function Windows:CreateEquipmentSlots(programWindow, parent)
+    for _, slotData in ipairs(programWindow.EQUIPMENT_SLOTS) do
+        -- Slot frame (made larger to fill space better)
+        local slotFrame = CreateFrame("Button", nil, parent, "BackdropTemplate")
+        slotFrame:SetSize(40, 40)
+        slotFrame:SetPoint("TOPLEFT", parent, "TOPLEFT", slotData.pos.x, slotData.pos.y)
+        -- Ensure equipment slots don't interfere with title bar dragging
+        slotFrame:SetFrameLevel(parent:GetFrameLevel() + 1)
+        
+        -- Slot backdrop with inset border for item frame look
+        slotFrame:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 2,
+            insets = {left = 2, right = 2, top = 2, bottom = 2}
+        })
+        slotFrame:SetBackdropColor(0.3, 0.3, 0.3, 1) -- Dark background for empty slots
+        slotFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1) -- Frame border
+        
+        -- Slot icon/item (inset from border)
+        local itemIcon = slotFrame:CreateTexture(nil, "ARTWORK")
+        itemIcon:SetPoint("TOPLEFT", slotFrame, "TOPLEFT", 2, -2)
+        itemIcon:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMRIGHT", -2, 2)
+        itemIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        
+        -- Get equipped item and set initial display
+        self:UpdateSlotDisplay(slotData.slot, itemIcon, slotData)
+        
+        -- Slot label
+        local slotLabel = parent:CreateFontString(nil, "OVERLAY")
+        slotLabel:SetPoint("LEFT", slotFrame, "RIGHT", 5, 0)
+        slotLabel:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+        slotLabel:SetText(slotData.name)
+        slotLabel:SetTextColor(0, 0, 0, 1)
+        slotLabel:SetShadowColor(0, 0, 0, 0) -- Remove drop shadow
+        
+        -- Item level text (if item equipped)
+        local ilvlText = parent:CreateFontString(nil, "OVERLAY")
+        ilvlText:SetPoint("LEFT", slotLabel, "RIGHT", 5, 0)
+        ilvlText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+        ilvlText:SetTextColor(0.3, 0.3, 0.8, 1)
+        ilvlText:SetShadowColor(0, 0, 0, 0) -- Remove drop shadow
+        
+        if itemID then
+            local itemLevel = GetDetailedItemLevelInfo(GetInventoryItemLink("player", slotData.slot))
+            if itemLevel and itemLevel > 0 then
+                ilvlText:SetText("(" .. itemLevel .. ")")
+            else
+                ilvlText:SetText("")
+            end
+        else
+            ilvlText:SetText("")
+        end
+        
+        -- Enable drag and drop
+        slotFrame:RegisterForDrag("LeftButton")
+        slotFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        
+        -- Drag and drop handling
+        slotFrame:SetScript("OnDragStart", function(self)
+            if not InCombatLockdown() then
+                PickupInventoryItem(slotData.slot)
+            end
+        end)
+        
+        slotFrame:SetScript("OnReceiveDrag", function(self)
+            if not InCombatLockdown() then
+                local cursorType, cursorInfo = GetCursorInfo()
+                if cursorType == "item" then
+                    EquipCursorItem(slotData.slot)
+                    ClearCursor()
+                end
+            end
+        end)
+        
+        -- Click handling
+        slotFrame:SetScript("OnClick", function(self, button)
+            if not InCombatLockdown() then
+                if button == "LeftButton" then
+                    if IsShiftKeyDown() then
+                        -- Shift-click to link item in chat
+                        local itemLink = GetInventoryItemLink("player", slotData.slot)
+                        if itemLink then
+                            ChatEdit_InsertLink(itemLink)
+                        end
+                    else
+                        -- Left-click to pick up item
+                        PickupInventoryItem(slotData.slot)
+                    end
+                elseif button == "RightButton" then
+                    -- Right-click to safely unequip item to bag without destroying it
+                    local itemLink = GetInventoryItemLink("player", slotData.slot)
+                    if itemLink and not InCombatLockdown() then
+                        -- Find empty bag slot first
+                        local targetBag, targetSlot = nil, nil
+                        for bag = 0, NUM_BAG_SLOTS do
+                            local numSlots = C_Container.GetContainerNumSlots(bag) or 0
+                            for slot = 1, numSlots do
+                                local itemID = C_Container.GetContainerItemID(bag, slot)
+                                if not itemID then -- Empty slot found
+                                    targetBag = bag
+                                    targetSlot = slot
+                                    break
+                                end
+                            end
+                            if targetBag then break end
+                        end
+                        
+                        if targetBag then
+                            -- Safely move the item: pick up from equipment, place in bag
+                            PickupInventoryItem(slotData.slot)
+                            if CursorHasItem() then
+                                -- Use the modern container API
+                                C_Container.PickupContainerItem(targetBag, targetSlot)
+                                -- Clear cursor to ensure the transaction completes
+                                if CursorHasItem() then
+                                    ClearCursor() -- Safety fallback
+                                end
+                            end
+                        else
+                            -- No bag space - show warning, don't pick up item
+                            UIErrorsFrame:AddMessage("No bag space available!", 1.0, 0.1, 0.1, 1.0)
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Tooltip on hover
+        slotFrame:SetScript("OnEnter", function(self)
+            local itemLink = GetInventoryItemLink("player", slotData.slot)
+            if itemLink then
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:SetInventoryItem("player", slotData.slot)
+                GameTooltip:Show()
+            else
+                -- Show empty slot tooltip
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:SetText(slotData.name .. " Slot")
+                GameTooltip:AddLine("Drag an item here to equip it", 0.7, 0.7, 0.7)
+                GameTooltip:Show()
+            end
+        end)
+        
+        slotFrame:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+        
+        programWindow.equipmentSlots[slotData.slot] = {
+            frame = slotFrame,
+            icon = itemIcon,
+            label = slotLabel,
+            ilvl = ilvlText
+        }
+    end
+end
+
+function Windows:CreateStatsPanel(parent)
+    -- Stats panel (moved further right to accommodate new layout)
+    local statsPanel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    statsPanel:SetSize(180, 350)
+    statsPanel:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, -10)
+    statsPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    statsPanel:SetBackdropColor(0.95, 0.95, 0.95, 1)
+    statsPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Stats title
+    local statsTitle = statsPanel:CreateFontString(nil, "OVERLAY")
+    statsTitle:SetPoint("TOP", statsPanel, "TOP", 0, -8)
+    statsTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    statsTitle:SetText("Character Stats")
+    statsTitle:SetTextColor(0, 0, 0, 1)
+    statsTitle:SetShadowColor(0, 0, 0, 0) -- Remove drop shadow
+    
+    -- Get player stats
+    local level = UnitLevel("player")
+    local class = UnitClass("player")
+    local race = UnitRace("player")
+    
+    -- Get class color
+    local _, englishClass = UnitClass("player")
+    local classColor = RAID_CLASS_COLORS[englishClass] or {r=1, g=1, b=1}
+    
+    -- Create colored stat lines
+    local yOffset = -30
+    local function CreateColoredStatLine(label, value, labelColor, valueColor)
+        labelColor = labelColor or {0.2, 0.4, 0.8, 1} -- Default blue for labels
+        valueColor = valueColor or {0, 0, 0, 1} -- Default black for values
+        
+        -- Create label
+        local labelText = statsPanel:CreateFontString(nil, "OVERLAY")
+        labelText:SetPoint("TOPLEFT", statsPanel, "TOPLEFT", 8, yOffset)
+        labelText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+        labelText:SetText(label .. ":")
+        labelText:SetTextColor(unpack(labelColor))
+        labelText:SetShadowColor(0, 0, 0, 0)
+        labelText:SetJustifyH("LEFT")
+        
+        -- Create value
+        local valueText = statsPanel:CreateFontString(nil, "OVERLAY")
+        valueText:SetPoint("LEFT", labelText, "RIGHT", 5, 0)
+        valueText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+        valueText:SetText(tostring(value))
+        valueText:SetTextColor(unpack(valueColor))
+        valueText:SetShadowColor(0, 0, 0, 0)
+        valueText:SetJustifyH("LEFT")
+        
+        yOffset = yOffset - 16
+        return labelText, valueText
+    end
+    
+    CreateColoredStatLine("Level", level)
+    CreateColoredStatLine("Class", class, {0.2, 0.4, 0.8, 1}, {classColor.r, classColor.g, classColor.b, 1})
+    CreateColoredStatLine("Race", race)
+    
+    yOffset = yOffset - 10 -- Add some spacing
+    
+    -- Primary stats with colored labels
+    CreateColoredStatLine("Strength", UnitStat("player", 1), {0.8, 0.2, 0.2, 1}) -- Red
+    CreateColoredStatLine("Agility", UnitStat("player", 2), {0.2, 0.8, 0.2, 1}) -- Green
+    CreateColoredStatLine("Stamina", UnitStat("player", 3), {0.8, 0.6, 0.2, 1}) -- Orange
+    CreateColoredStatLine("Intellect", UnitStat("player", 4), {0.2, 0.4, 0.8, 1}) -- Blue
+    
+    yOffset = yOffset - 10
+    
+    -- Secondary stats with colored labels
+    CreateColoredStatLine("Critical Strike", string.format("%.1f", GetCritChance()) .. "%", {0.6, 0.2, 0.6, 1}) -- Purple
+    CreateColoredStatLine("Haste", string.format("%.1f", GetHaste()) .. "%", {0.8, 0.4, 0.2, 1}) -- Orange-red
+    CreateColoredStatLine("Mastery", string.format("%.1f", GetMastery()) .. "%", {0.2, 0.6, 0.8, 1}) -- Light blue
+    local versatilityRating = GetCombatRating(29) or 0
+    local versatilityPercent = GetCombatRatingBonus(29) or 0
+    CreateColoredStatLine("Versatility", versatilityRating .. " (" .. string.format("%.1f", versatilityPercent) .. "%)", {0.4, 0.8, 0.4, 1}) -- Light green
+    
+    yOffset = yOffset - 10
+    
+    -- Item level with colored label
+    local avgItemLevel, equippedItemLevel = GetAverageItemLevel()
+    CreateColoredStatLine("Item Level", string.format("%.1f", avgItemLevel or 0), {0.6, 0.4, 0.2, 1}) -- Brown/gold
+    
+    WoW95:Debug("Created stats panel with character information")
+end
+
+function Windows:CreateReputationTab(programWindow)
+    local content = programWindow.tabContent["reputation"]
+    if not content then return end
+    
+    WoW95:Debug("Creating Reputation tab content")
+    
+    -- Create scrollable reputation list
+    local scrollFrame = CreateFrame("ScrollFrame", nil, content, "BackdropTemplate")
+    scrollFrame:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -30, 10)
+    scrollFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    scrollFrame:SetBackdropColor(0.98, 0.98, 0.98, 1)
+    scrollFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Scroll child
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollFrame:SetScrollChild(scrollChild)
+    scrollChild:SetSize(scrollFrame:GetWidth() - 4, 1) -- Height will be set dynamically
+    
+    -- Title
+    local title = scrollChild:CreateFontString(nil, "OVERLAY")
+    title:SetPoint("TOP", scrollChild, "TOP", 0, -10)
+    title:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
+    title:SetText("Faction Standings")
+    title:SetTextColor(0.1, 0.1, 0.8, 1)
+    title:SetShadowColor(0, 0, 0, 0)
+    
+    -- Get reputation data
+    local yOffset = -35
+    local factionCount = 0
+    
+    -- Get all factions using modern API
+    local numFactions = C_Reputation.GetNumFactions() or 0
+    for i = 1, numFactions do
+        local factionData = C_Reputation.GetFactionDataByIndex(i)
+        
+        if factionData then
+            local name = factionData.name
+            local standingID = factionData.reaction
+            local barMin = factionData.currentReactionThreshold or 0
+            local barMax = factionData.nextReactionThreshold or 0
+            local barValue = factionData.currentStanding or 0
+            local isHeader = factionData.isHeader
+            local isCollapsed = factionData.isCollapsed
+            local factionID = factionData.factionID
+            
+            -- Check if this is a major faction (renown system)
+            local isMajorFaction = false
+            local majorFactionData = nil
+            if factionID and C_MajorFactions and C_MajorFactions.GetMajorFactionData then
+                majorFactionData = C_MajorFactions.GetMajorFactionData(factionID)
+                isMajorFaction = majorFactionData ~= nil
+            end
+            
+            if isHeader then
+                -- Create expandable header
+                factionCount = factionCount + 1
+                
+                local headerFrame = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
+                headerFrame:SetSize(scrollFrame:GetWidth() - 30, 20)
+                headerFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yOffset)
+                headerFrame:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8X8",
+                    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                    tile = true,
+                    tileSize = 8,
+                    edgeSize = 1,
+                    insets = {left = 1, right = 1, top = 1, bottom = 1}
+                })
+                headerFrame:SetBackdropColor(0.8, 0.8, 0.9, 1)
+                headerFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                
+                -- Expand/collapse icon
+                local expandIcon = headerFrame:CreateFontString(nil, "OVERLAY")
+                expandIcon:SetPoint("LEFT", headerFrame, "LEFT", 5, 0)
+                expandIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                expandIcon:SetText(isCollapsed and "+" or "-")
+                expandIcon:SetTextColor(0, 0, 0, 1)
+                expandIcon:SetShadowColor(0, 0, 0, 0)
+                
+                -- Header name
+                local headerName = headerFrame:CreateFontString(nil, "OVERLAY")
+                headerName:SetPoint("LEFT", expandIcon, "RIGHT", 5, 0)
+                headerName:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+                headerName:SetText(name)
+                headerName:SetTextColor(0.1, 0.1, 0.5, 1)
+                headerName:SetShadowColor(0, 0, 0, 0)
+                
+                -- Click to expand/collapse
+                headerFrame:SetScript("OnClick", function()
+                    if not InCombatLockdown() then
+                        if isCollapsed then
+                            -- First collapse all other headers to prevent clipping
+                            local totalFactions = C_Reputation.GetNumFactions() or 0
+                            for j = 1, totalFactions do
+                                local otherFactionData = C_Reputation.GetFactionDataByIndex(j)
+                                if otherFactionData and otherFactionData.isHeader and j ~= i and not otherFactionData.isCollapsed then
+                                    C_Reputation.CollapseFactionHeader(j)
+                                end
+                            end
+                            -- Then expand this one
+                            C_Reputation.ExpandFactionHeader(i)
+                        else
+                            C_Reputation.CollapseFactionHeader(i)
+                        end
+                        -- Refresh the reputation tab after a short delay
+                        C_Timer.After(0.2, function()
+                            if programWindow.tabContent["reputation"] then
+                                -- Clear all content first
+                                for _, child in pairs({programWindow.tabContent["reputation"]:GetChildren()}) do
+                                    child:Hide()
+                                    child:SetParent(nil)
+                                end
+                                programWindow.tabContent["reputation"].contentCreated = nil
+                                Windows:ShowCharacterTab(programWindow, "reputation")
+                            end
+                        end)
+                    end
+                end)
+                
+                -- Hover effect
+                headerFrame:SetScript("OnEnter", function(self)
+                    self:SetBackdropColor(0.9, 0.9, 1, 1)
+                end)
+                headerFrame:SetScript("OnLeave", function(self)
+                    self:SetBackdropColor(0.8, 0.8, 0.9, 1)
+                end)
+                
+                yOffset = yOffset - 25
+                
+            elseif name then
+                factionCount = factionCount + 1
+                
+                -- Faction name (indented under headers)  
+                local factionName = scrollChild:CreateFontString(nil, "OVERLAY")
+                factionName:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 25, yOffset) -- Indented more than headers
+                factionName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                factionName:SetText(name)
+                factionName:SetTextColor(0, 0, 0, 1)
+                factionName:SetShadowColor(0, 0, 0, 0)
+                factionName:SetJustifyH("LEFT")
+                
+                local standingText, standingColors, displayText
+                
+                if isMajorFaction and majorFactionData then
+                    -- Handle major factions (renown system)
+                    local renownLevel = majorFactionData.renownLevel or 1
+                    displayText = "Renown " .. renownLevel
+                    standingText = {displayText}
+                    standingColors = {{0.0, 0.8, 1.0, 1}} -- Bright blue for renown
+                    
+                    -- Use renown progress for bar
+                    barValue = majorFactionData.renownReputationEarned or 0
+                    barMax = majorFactionData.renownLevelThreshold or 1
+                    barMin = 0
+                else
+                    -- Handle regular factions
+                    standingText = {"Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted"}
+                    standingColors = {
+                        {0.8, 0.1, 0.1, 1}, -- Hated - Red
+                        {0.9, 0.2, 0.1, 1}, -- Hostile - Orange-red  
+                        {0.8, 0.4, 0.1, 1}, -- Unfriendly - Orange
+                        {0.8, 0.8, 0.1, 1}, -- Neutral - Yellow
+                        {0.1, 0.8, 0.1, 1}, -- Friendly - Green
+                        {0.1, 0.6, 0.8, 1}, -- Honored - Light blue
+                        {0.4, 0.2, 0.8, 1}, -- Revered - Purple
+                        {0.8, 0.4, 0.8, 1}  -- Exalted - Pink
+                    }
+                    displayText = standingText[standingID] or "Unknown"
+                end
+                
+                local standing = scrollChild:CreateFontString(nil, "OVERLAY")
+                standing:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -15, yOffset)
+                standing:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                standing:SetText(displayText)
+                standing:SetTextColor(unpack(standingColors[1] or {0.5, 0.5, 0.5, 1}))
+                standing:SetShadowColor(0, 0, 0, 0)
+                standing:SetJustifyH("RIGHT")
+                
+                -- Progress bar (show for major factions or regular non-exalted)
+                local showProgressBar = (isMajorFaction and majorFactionData) or (standingID < 8 and barMax > barMin)
+                if showProgressBar and barMax > barMin then
+                    local progressBG = CreateFrame("Frame", nil, scrollChild, "BackdropTemplate")
+                    progressBG:SetSize(180, 8)
+                    progressBG:SetPoint("TOPLEFT", factionName, "BOTTOMLEFT", 0, -3)
+                    progressBG:SetBackdrop({
+                        bgFile = "Interface\\Buttons\\WHITE8X8",
+                        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                        tile = true,
+                        tileSize = 1,
+                        edgeSize = 1,
+                        insets = {left = 1, right = 1, top = 1, bottom = 1}
+                    })
+                    progressBG:SetBackdropColor(0.2, 0.2, 0.2, 1)
+                    progressBG:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                    
+                    local progressBar = CreateFrame("Frame", nil, progressBG, "BackdropTemplate")
+                    local progress = math.max(0, math.min(1, (barValue - barMin) / (barMax - barMin)))
+                    progressBar:SetSize(178 * progress, 6)
+                    progressBar:SetPoint("LEFT", progressBG, "LEFT", 1, 0)
+                    progressBar:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8"})
+                    
+                    -- Use appropriate color for progress bar
+                    if isMajorFaction then
+                        progressBar:SetBackdropColor(unpack(standingColors[1])) -- Blue for renown
+                    else
+                        progressBar:SetBackdropColor(unpack(standingColors[standingID] or {0.5, 0.5, 0.5, 1}))
+                    end
+                    
+                    -- Progress text
+                    local progressText = scrollChild:CreateFontString(nil, "OVERLAY")
+                    progressText:SetPoint("CENTER", progressBG, "CENTER", 0, 0)
+                    progressText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
+                    
+                    if isMajorFaction then
+                        -- Show renown progress
+                        progressText:SetText(barValue .. "/" .. barMax)
+                    else
+                        -- Show regular reputation progress
+                        progressText:SetText((barValue - barMin) .. "/" .. (barMax - barMin))
+                    end
+                    
+                    progressText:SetTextColor(1, 1, 1, 1)
+                    progressText:SetShadowColor(0, 0, 0, 1)
+                    
+                    yOffset = yOffset - 35
+                else
+                    yOffset = yOffset - 20
+                end
+                
+                -- Limit to prevent too many factions
+                if factionCount >= 30 then break end
+            end
+        end
+    end
+    
+    -- Set scroll child height dynamically
+    local contentHeight = math.abs(yOffset) + 50  -- Extra padding
+    scrollChild:SetHeight(contentHeight)
+    
+    -- Update scroll frame settings
+    scrollFrame:SetVerticalScroll(0)
+    
+    -- Enable mouse wheel scrolling
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local maxScroll = math.max(0, contentHeight - scrollFrame:GetHeight())
+        local currentScroll = self:GetVerticalScroll()
+        local newScroll = math.max(0, math.min(maxScroll, currentScroll - (delta * 20)))
+        self:SetVerticalScroll(newScroll)
+    end)
+    
+    -- Make sure scroll frame doesn't block mouse events for child elements
+    scrollFrame:SetHitRectInsets(0, 0, 0, 0)
+    
+    -- Simple scrollbar
+    local scrollbar = CreateFrame("Slider", nil, scrollFrame, "BackdropTemplate")
+    scrollbar:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", -5, -5)
+    scrollbar:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", -5, 5)
+    scrollbar:SetWidth(15)
+    scrollbar:SetOrientation("VERTICAL")
+    local maxScrollValue = math.max(0, contentHeight - scrollFrame:GetHeight())
+    scrollbar:SetMinMaxValues(0, maxScrollValue)
+    scrollbar:SetValue(0)
+    scrollbar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    scrollbar:SetBackdropColor(0.7, 0.7, 0.7, 1)
+    scrollbar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    scrollbar:SetScript("OnValueChanged", function(self, value)
+        scrollFrame:SetVerticalScroll(value)
+    end)
+    
+    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local current = scrollbar:GetValue()
+        local min, max = scrollbar:GetMinMaxValues()
+        local newValue = math.max(min, math.min(max, current - (delta * 20)))
+        scrollbar:SetValue(newValue)
+    end)
+    scrollFrame:EnableMouseWheel(true)
+    
+    content.contentCreated = true
+end
+
+function Windows:CreateCurrencyTab(programWindow)
+    local content = programWindow.tabContent["currency"]
+    if not content then return end
+    
+    WoW95:Debug("Creating Currency tab content")
+    
+    -- Create scrollable currency list
+    local scrollFrame = CreateFrame("ScrollFrame", nil, content, "BackdropTemplate")
+    scrollFrame:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -30, 10)
+    scrollFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    scrollFrame:SetBackdropColor(0.98, 0.98, 0.98, 1)
+    scrollFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Disable mouse on scroll frame so child buttons can receive clicks
+    scrollFrame:EnableMouse(false)
+    
+    -- Scroll child
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollFrame:SetScrollChild(scrollChild)
+    scrollChild:SetSize(scrollFrame:GetWidth() - 4, 1)
+    
+    -- Title
+    local title = scrollChild:CreateFontString(nil, "OVERLAY")
+    title:SetPoint("TOP", scrollChild, "TOP", 0, -10)
+    title:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
+    title:SetText("Currencies & Tokens")
+    title:SetTextColor(0.1, 0.1, 0.8, 1)
+    title:SetShadowColor(0, 0, 0, 0)
+    
+    local yOffset = -35
+    local currencyCount = 0
+    
+    -- Get money first
+    local money = GetMoney()
+    if money > 0 then
+        currencyCount = currencyCount + 1
+        
+        -- Gold icon
+        local goldIcon = scrollChild:CreateTexture(nil, "ARTWORK")
+        goldIcon:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
+        goldIcon:SetSize(16, 16)
+        goldIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+        
+        -- Gold name
+        local goldName = scrollChild:CreateFontString(nil, "OVERLAY")
+        goldName:SetPoint("LEFT", goldIcon, "RIGHT", 5, 0)
+        goldName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        goldName:SetText("Gold")
+        goldName:SetTextColor(0, 0, 0, 1)
+        goldName:SetShadowColor(0, 0, 0, 0)
+        
+        -- Gold amount
+        local goldAmount = scrollChild:CreateFontString(nil, "OVERLAY")
+        goldAmount:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -15, yOffset)
+        goldAmount:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        
+        local gold = math.floor(money / 10000)
+        local silver = math.floor((money % 10000) / 100)
+        local copper = money % 100
+        
+        local moneyText = ""
+        if gold > 0 then
+            moneyText = gold .. "g "
+        end
+        if silver > 0 or gold > 0 then
+            moneyText = moneyText .. silver .. "s "
+        end
+        moneyText = moneyText .. copper .. "c"
+        
+        goldAmount:SetText(moneyText)
+        goldAmount:SetTextColor(1, 0.8, 0, 1) -- Gold color
+        goldAmount:SetShadowColor(0, 0, 0, 0)
+        
+        yOffset = yOffset - 25
+    end
+    
+    -- Get currency data
+    for i = 1, C_CurrencyInfo.GetCurrencyListSize() do
+        local currencyInfo = C_CurrencyInfo.GetCurrencyListInfo(i)
+        
+        if currencyInfo and not currencyInfo.isHeader and currencyInfo.quantity > 0 then
+            currencyCount = currencyCount + 1
+            
+            -- Currency icon
+            local currencyIcon = scrollChild:CreateTexture(nil, "ARTWORK")
+            currencyIcon:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 15, yOffset)
+            currencyIcon:SetSize(16, 16)
+            if currencyInfo.iconFileID and currencyInfo.iconFileID > 0 then
+                currencyIcon:SetTexture(currencyInfo.iconFileID)
+            else
+                currencyIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            end
+            
+            -- Currency name
+            local currencyName = scrollChild:CreateFontString(nil, "OVERLAY")
+            currencyName:SetPoint("LEFT", currencyIcon, "RIGHT", 5, 0)
+            currencyName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+            currencyName:SetText(currencyInfo.name or "Unknown")
+            currencyName:SetTextColor(0, 0, 0, 1)
+            currencyName:SetShadowColor(0, 0, 0, 0)
+            
+            -- Check if currency is transferable
+            local isTransferable = false
+            local transferInfo = nil
+            if C_CurrencyInfo.IsCurrencyAccountTransferable and currencyInfo.currencyTypesID then
+                local success, result = pcall(C_CurrencyInfo.IsCurrencyAccountTransferable, currencyInfo.currencyTypesID)
+                isTransferable = success and result
+                WoW95:Debug("Currency " .. (currencyInfo.name or "Unknown") .. " transferable: " .. tostring(isTransferable))
+                
+                if isTransferable and C_CurrencyInfo.GetCurrencyTransferInfo then
+                    local success2, result2 = pcall(C_CurrencyInfo.GetCurrencyTransferInfo, currencyInfo.currencyTypesID)
+                    if success2 then
+                        transferInfo = result2
+                    end
+                end
+            end
+            
+            -- Currency amount (adjust position if transfer button exists)
+            local currencyAmount = scrollChild:CreateFontString(nil, "OVERLAY")
+            if isTransferable then
+                currencyAmount:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -80, yOffset) -- Make room for transfer button
+            else
+                currencyAmount:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -15, yOffset)
+            end
+            currencyAmount:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+            
+            local amountText = tostring(currencyInfo.quantity or 0)
+            if currencyInfo.maxQuantity and currencyInfo.maxQuantity > 0 then
+                amountText = amountText .. "/" .. currencyInfo.maxQuantity
+            end
+            
+            currencyAmount:SetText(amountText)
+            
+            -- Color based on currency type
+            local currencyColor = {0.2, 0.2, 0.8, 1} -- Default blue
+            if currencyInfo.name then
+                if currencyInfo.name:find("Honor") then
+                    currencyColor = {0.8, 0.2, 0.2, 1} -- Red for Honor
+                elseif currencyInfo.name:find("Conquest") then
+                    currencyColor = {0.8, 0.4, 0.1, 1} -- Orange for Conquest  
+                elseif currencyInfo.name:find("Justice") or currencyInfo.name:find("Valor") then
+                    currencyColor = {0.1, 0.8, 0.1, 1} -- Green for PvE currencies
+                elseif currencyInfo.name:find("Badge") or currencyInfo.name:find("Mark") then
+                    currencyColor = {0.6, 0.2, 0.8, 1} -- Purple for badges
+                end
+            end
+            
+            currencyAmount:SetTextColor(unpack(currencyColor))
+            currencyAmount:SetShadowColor(0, 0, 0, 0)
+            
+            -- Add transfer button if currency is transferable
+            if isTransferable then
+                WoW95:Debug("Creating transfer button for currency: " .. (currencyInfo.name or "Unknown"))
+                
+                -- Create a simple button frame instead of using WoW95:CreateButton
+                local transferButton = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
+                transferButton:SetSize(60, 16)
+                transferButton:SetPoint("TOPRIGHT", scrollChild, "TOPRIGHT", -10, yOffset - 1)
+                
+                -- Button backdrop
+                transferButton:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8X8",
+                    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                    tile = true,
+                    tileSize = 8,
+                    edgeSize = 1,
+                    insets = {left = 1, right = 1, top = 1, bottom = 1}
+                })
+                transferButton:SetBackdropColor(0.7, 0.7, 0.9, 1)
+                transferButton:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                
+                -- Button text
+                local buttonText = transferButton:CreateFontString(nil, "OVERLAY")
+                buttonText:SetPoint("CENTER", transferButton, "CENTER", 0, 0)
+                buttonText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
+                buttonText:SetText("Transfer")
+                buttonText:SetTextColor(0, 0, 0, 1)
+                buttonText:SetShadowColor(0, 0, 0, 0)
+                
+                -- Make sure it's mouse enabled and on top
+                transferButton:EnableMouse(true)
+                transferButton:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)  -- Higher frame level
+                transferButton:RegisterForClicks("LeftButtonUp")
+                
+                -- Mark this button as needing mouse interaction
+                transferButton.WoW95ShouldHaveMouse = true
+                
+                -- Store currency ID for the callback
+                local currencyID = currencyInfo.currencyTypesID
+                WoW95:Debug("Stored currency ID for transfer: " .. tostring(currencyID))
+                
+                transferButton:SetScript("OnClick", function(self, button)
+                    WoW95:Debug("=== TRANSFER BUTTON CLICKED ===")
+                    WoW95:Debug("Button: " .. tostring(button))
+                    WoW95:Debug("Currency ID: " .. tostring(currencyID))
+                    WoW95:Debug("Combat: " .. tostring(InCombatLockdown()))
+                    
+                    if not InCombatLockdown() then
+                        if C_CurrencyInfo.RequestCurrencyTransfer then
+                            WoW95:Debug("Calling RequestCurrencyTransfer for ID: " .. tostring(currencyID))
+                            local success, error = pcall(C_CurrencyInfo.RequestCurrencyTransfer, currencyID)
+                            if success then
+                                WoW95:Debug("Transfer request sent successfully!")
+                                UIErrorsFrame:AddMessage("Currency transfer requested!", 0.1, 1.0, 0.1, 1.0)
+                            else
+                                WoW95:Debug("Transfer failed with error: " .. tostring(error))
+                                UIErrorsFrame:AddMessage("Transfer failed: " .. tostring(error), 1.0, 0.1, 0.1, 1.0)
+                            end
+                        else
+                            WoW95:Debug("RequestCurrencyTransfer function not available")
+                            UIErrorsFrame:AddMessage("Currency transfer not available!", 1.0, 0.1, 0.1, 1.0)
+                        end
+                    else
+                        WoW95:Debug("Cannot transfer - in combat")
+                        UIErrorsFrame:AddMessage("Cannot transfer currency in combat!", 1.0, 0.1, 0.1, 1.0)
+                    end
+                end)
+                
+                -- Button effects and tooltip combined
+                transferButton:SetScript("OnEnter", function(self)
+                    self:SetBackdropColor(0.8, 0.8, 1.0, 1)
+                    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                    GameTooltip:SetText("Transfer Currency")
+                    GameTooltip:AddLine("Transfer this currency between characters on your account", 0.7, 0.7, 0.7)
+                    if transferInfo then
+                        GameTooltip:AddLine("Available on: " .. (transferInfo.numOtherCharacters or 0) .. " characters", 0.5, 0.5, 0.8)
+                    end
+                    GameTooltip:Show()
+                end)
+                
+                transferButton:SetScript("OnLeave", function(self)
+                    self:SetBackdropColor(0.7, 0.7, 0.9, 1)
+                    GameTooltip:Hide()
+                end)
+                
+                transferButton:SetScript("OnMouseDown", function(self, button)
+                    WoW95:Debug("Transfer button mouse down: " .. tostring(button))
+                    self:SetBackdropColor(0.5, 0.5, 0.7, 1)
+                end)
+                
+                transferButton:SetScript("OnMouseUp", function(self, button)
+                    WoW95:Debug("Transfer button mouse up: " .. tostring(button))
+                    self:SetBackdropColor(0.8, 0.8, 1.0, 1)
+                end)
+            end
+            
+            yOffset = yOffset - 25
+            
+            -- Limit display
+            if currencyCount >= 25 then break end
+        end
+    end
+    
+    -- If no currencies, show a message
+    if currencyCount <= 1 then -- Only gold
+        local noCurrency = scrollChild:CreateFontString(nil, "OVERLAY")
+        noCurrency:SetPoint("CENTER", scrollChild, "CENTER", 0, -50)
+        noCurrency:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+        noCurrency:SetText("No special currencies found.\n\nEarn currencies through dungeons,\nPvP, raids, and special events.")
+        noCurrency:SetTextColor(0.5, 0.5, 0.5, 1)
+        noCurrency:SetShadowColor(0, 0, 0, 0)
+        noCurrency:SetJustifyH("CENTER")
+        yOffset = yOffset - 80
+    end
+    
+    -- Set scroll child height dynamically
+    local contentHeight = math.abs(yOffset) + 50  -- Extra padding
+    scrollChild:SetHeight(contentHeight)
+    
+    -- Update scroll frame settings
+    scrollFrame:SetVerticalScroll(0)
+    
+    -- Enable mouse wheel scrolling
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local maxScroll = math.max(0, contentHeight - scrollFrame:GetHeight())
+        local currentScroll = self:GetVerticalScroll()
+        local newScroll = math.max(0, math.min(maxScroll, currentScroll - (delta * 20)))
+        self:SetVerticalScroll(newScroll)
+    end)
+    
+    -- Make sure scroll frame doesn't block mouse events for child elements
+    scrollFrame:SetHitRectInsets(0, 0, 0, 0)
+    
+    -- Simple scrollbar
+    local scrollbar = CreateFrame("Slider", nil, scrollFrame, "BackdropTemplate")
+    scrollbar:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", -5, -5)
+    scrollbar:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", -5, 5)
+    scrollbar:SetWidth(15)
+    scrollbar:SetOrientation("VERTICAL")
+    local maxScrollValue = math.max(0, contentHeight - scrollFrame:GetHeight())
+    scrollbar:SetMinMaxValues(0, maxScrollValue)
+    scrollbar:SetValue(0)
+    scrollbar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    scrollbar:SetBackdropColor(0.7, 0.7, 0.7, 1)
+    scrollbar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    scrollbar:SetScript("OnValueChanged", function(self, value)
+        scrollFrame:SetVerticalScroll(value)
+    end)
+    
+    -- Enable mouse wheel scrolling on the content frame instead of scroll frame to allow button clicks
+    content:SetScript("OnMouseWheel", function(self, delta)
+        local current = scrollbar:GetValue()
+        local min, max = scrollbar:GetMinMaxValues()
+        local newValue = math.max(min, math.min(max, current - (delta * 20)))
+        scrollbar:SetValue(newValue)
+    end)
+    content:EnableMouseWheel(true)
+    
+    content.contentCreated = true
+end
+
+function Windows:CreateAchievementsWindow(frameName, program)
+    -- Don't create duplicate windows - show existing one if it exists
+    if self.programWindows[frameName] then 
+        WoW95:Debug("Achievements window already exists, showing it")
+        local existingWindow = self.programWindows[frameName]
+        if not existingWindow:IsShown() then
+            existingWindow:Show()
+            WoW95:OnWindowOpened(existingWindow)
+        end
+        return existingWindow
+    end
+    
+    WoW95:Debug("Creating custom Achievements window")
+    
+    -- Create the main achievements window
+    local achievementsWindow = self:CreateCharacterWindow(
+        "WoW95Achievements", 
+        UIParent, 
+        800, 
+        600, 
+        "Achievements - World of Warcraft"
+    )
+    
+    -- Position window
+    achievementsWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    
+    -- Achievement window specific data
+    achievementsWindow.currentCategory = nil
+    achievementsWindow.categoryButtons = {}
+    achievementsWindow.achievementButtons = {}
+    
+    -- Create summary header
+    self:CreateAchievementsSummary(achievementsWindow)
+    
+    -- Create category panel (left side)
+    self:CreateCategoriesPanel(achievementsWindow)
+    
+    -- Create achievement content panel (right side)
+    self:CreateAchievementsPanel(achievementsWindow)
+    
+    -- Load initial categories
+    self:LoadAchievementCategories(achievementsWindow)
+    
+    -- Set properties for taskbar recognition
+    achievementsWindow.programName = program.name
+    achievementsWindow.frameName = frameName
+    achievementsWindow.isWoW95Window = true
+    achievementsWindow.isProgramWindow = true
+    
+    -- Store reference
+    self.programWindows[frameName] = achievementsWindow
+    
+    -- Show the window
+    achievementsWindow:Show()
+    
+    -- Notify taskbar
+    WoW95:OnWindowOpened(achievementsWindow)
+    
+    return achievementsWindow
+end
+
+-- Create World Map Window
+function Windows:CreateWorldMapWindow(frameName, program)
+    WoW95:Debug("Creating World Map window: " .. frameName)
+    
+    -- Create main window
+    local mapWindow = WoW95:CreateWindow(frameName, UIParent, 1000, 700, program.title or "World Map")
+    mapWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    mapWindow:Show()
+    
+    -- Create map display area (main central area)
+    self:CreateMapDisplay(mapWindow)
+    
+    -- Create zone selection panel (left side)
+    self:CreateZoneSelection(mapWindow)
+    
+    -- Create map controls (top toolbar)
+    self:CreateMapControls(mapWindow)
+    
+    -- Create quest panel (right side)
+    self:CreateCustomQuestPanel(mapWindow)
+    
+    -- Create coordinate display (bottom status bar)
+    self:CreateCoordinateDisplay(mapWindow)
+    
+    -- Initialize map system
+    self:InitializeMapSystem(mapWindow)
+    
+    -- Set properties for taskbar recognition
+    mapWindow.programName = program.name
+    mapWindow.frameName = frameName
+    mapWindow.isWoW95Window = true
+    mapWindow.isProgramWindow = true
+    
+    -- Store reference
+    self.programWindows[frameName] = mapWindow
+    
+    WoW95:Debug("World Map window created successfully")
+    return mapWindow
+end
+
+function Windows:CreateMapDisplay(mapWindow)
+    -- Create the main map display area (center)
+    local mapDisplay = CreateFrame("Frame", "WoW95MapDisplay", mapWindow, "BackdropTemplate")
+    mapDisplay:SetPoint("TOPLEFT", mapWindow, "TOPLEFT", 200, -50) -- Leave space for zone panel and toolbar
+    mapDisplay:SetPoint("BOTTOMRIGHT", mapWindow, "BOTTOMRIGHT", -200, 25) -- Leave space for filters and status
+    
+    -- Map display background
+    mapDisplay:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    mapDisplay:SetBackdropColor(0.1, 0.1, 0.1, 1) -- Dark background for map
+    mapDisplay:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Embed the real WorldMapFrame into our display
+    C_Timer.After(0.1, function()
+        self:EmbedWorldMapIntoContainer(mapDisplay)
+    end)
+    
+    -- Store references
+    mapWindow.mapDisplay = mapDisplay
+    
+    WoW95:Debug("Map display area created")
+end
+
+function Windows:CreateZoneSelection(mapWindow)
+    -- Create zone selection panel (left side)
+    local zonePanel = CreateFrame("Frame", "WoW95MapZonePanel", mapWindow, "BackdropTemplate")
+    zonePanel:SetPoint("TOPLEFT", mapWindow, "TOPLEFT", 15, -25)
+    zonePanel:SetSize(180, mapWindow:GetHeight() - 65)
+    
+    -- Zone panel background
+    zonePanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    zonePanel:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    zonePanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Zone panel title
+    local zoneTitle = zonePanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    zoneTitle:SetPoint("TOP", zonePanel, "TOP", 0, -8)
+    zoneTitle:SetText("Zone Navigation")
+    zoneTitle:SetTextColor(0, 0, 0, 1)
+    zoneTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    zoneTitle:SetShadowColor(0, 0, 0, 0)
+    
+    -- Create scrollable zone list
+    local zoneScroll = CreateFrame("ScrollFrame", "WoW95MapZoneScroll", zonePanel)
+    zoneScroll:SetPoint("TOPLEFT", zonePanel, "TOPLEFT", 5, -25)
+    zoneScroll:SetPoint("BOTTOMRIGHT", zonePanel, "BOTTOMRIGHT", -5, 5)
+    
+    local zoneContent = CreateFrame("Frame", "WoW95MapZoneContent", zoneScroll)
+    zoneContent:SetSize(165, 500)
+    zoneScroll:SetScrollChild(zoneContent)
+    
+    -- Current zone display
+    local currentZoneFrame = CreateFrame("Frame", nil, zoneContent, "BackdropTemplate")
+    currentZoneFrame:SetPoint("TOPLEFT", zoneContent, "TOPLEFT", 5, -5)
+    currentZoneFrame:SetSize(150, 60)
+    currentZoneFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    currentZoneFrame:SetBackdropColor(unpack(WoW95.colors.selection))
+    currentZoneFrame:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    local currentZoneText = currentZoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    currentZoneText:SetPoint("CENTER")
+    currentZoneText:SetText("Current Zone:\nStormwind City")
+    currentZoneText:SetTextColor(1, 1, 1, 1)
+    currentZoneText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    currentZoneText:SetJustifyH("CENTER")
+    currentZoneText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Store references
+    mapWindow.zonePanel = zonePanel
+    mapWindow.zoneScroll = zoneScroll
+    mapWindow.zoneContent = zoneContent
+    mapWindow.currentZoneText = currentZoneText
+    
+    WoW95:Debug("Zone selection panel created")
+end
+
+function Windows:CreateMapControls(mapWindow)
+    -- Create toolbar (top)
+    local toolbar = CreateFrame("Frame", "WoW95MapToolbar", mapWindow, "BackdropTemplate")
+    toolbar:SetPoint("TOPLEFT", mapWindow, "TOPLEFT", 200, -25)
+    toolbar:SetPoint("TOPRIGHT", mapWindow, "TOPRIGHT", -200, -25)
+    toolbar:SetHeight(22)
+    
+    -- Toolbar background
+    toolbar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    toolbar:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    toolbar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Zoom controls
+    local zoomOutBtn = WoW95:CreateButton("WoW95MapZoomOut", toolbar, 40, 18, "Zoom -")
+    zoomOutBtn:SetPoint("LEFT", toolbar, "LEFT", 5, 0)
+    
+    local zoomInBtn = WoW95:CreateButton("WoW95MapZoomIn", toolbar, 40, 18, "Zoom +")
+    zoomInBtn:SetPoint("LEFT", zoomOutBtn, "RIGHT", 2, 0)
+    
+    -- Center on player button
+    local centerBtn = WoW95:CreateButton("WoW95MapCenter", toolbar, 80, 18, "Center Player")
+    centerBtn:SetPoint("LEFT", zoomInBtn, "RIGHT", 10, 0)
+    
+    -- Search box
+    local searchBox = CreateFrame("EditBox", "WoW95MapSearch", toolbar, "InputBoxTemplate")
+    searchBox:SetPoint("RIGHT", toolbar, "RIGHT", -5, 0)
+    searchBox:SetSize(120, 18)
+    searchBox:SetText("Search...")
+    searchBox:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    
+    -- Add functionality to controls
+    zoomOutBtn:SetScript("OnClick", function()
+        self:ZoomMapOut(mapWindow)
+    end)
+    
+    zoomInBtn:SetScript("OnClick", function()
+        self:ZoomMapIn(mapWindow)
+    end)
+    
+    centerBtn:SetScript("OnClick", function()
+        self:CenterMapOnPlayer(mapWindow)
+    end)
+    
+    searchBox:SetScript("OnEnterPressed", function(self)
+        Windows:SearchMap(mapWindow, self:GetText())
+    end)
+    
+    -- Store references
+    mapWindow.toolbar = toolbar
+    mapWindow.zoomOutBtn = zoomOutBtn
+    mapWindow.zoomInBtn = zoomInBtn
+    mapWindow.centerBtn = centerBtn
+    mapWindow.searchBox = searchBox
+    
+    WoW95:Debug("Map controls created with functionality")
+end
+
+function Windows:CreateMapFilters(mapWindow)
+    -- Create filters panel (right side)
+    local filtersPanel = CreateFrame("Frame", "WoW95MapFilters", mapWindow, "BackdropTemplate")
+    filtersPanel:SetPoint("TOPRIGHT", mapWindow, "TOPRIGHT", -15, -25)
+    filtersPanel:SetSize(180, mapWindow:GetHeight() - 65)
+    
+    -- Filters panel background
+    filtersPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    filtersPanel:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    filtersPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Filters panel title
+    local filtersTitle = filtersPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    filtersTitle:SetPoint("TOP", filtersPanel, "TOP", 0, -8)
+    filtersTitle:SetText("Map Filters")
+    filtersTitle:SetTextColor(0, 0, 0, 1)
+    filtersTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    filtersTitle:SetShadowColor(0, 0, 0, 0)
+    
+    -- Create filter checkboxes
+    local yOffset = 30
+    local filters = {
+        {name = "Quest Markers", key = "quests", default = true},
+        {name = "Flight Paths", key = "flights", default = true},
+        {name = "Vendors", key = "vendors", default = false},
+        {name = "Innkeepers", key = "inns", default = false},
+        {name = "Mailboxes", key = "mail", default = false},
+        {name = "Dungeons", key = "dungeons", default = true},
+        {name = "Raids", key = "raids", default = true},
+        {name = "Waypoints", key = "waypoints", default = true},
+        {name = "Party Members", key = "party", default = true},
+        {name = "POI Markers", key = "poi", default = false},
+    }
+    
+    mapWindow.mapFilters = {}
+    
+    for i, filter in ipairs(filters) do
+        local checkbox = CreateFrame("CheckButton", "WoW95MapFilter" .. i, filtersPanel, "UICheckButtonTemplate")
+        checkbox:SetPoint("TOPLEFT", filtersPanel, "TOPLEFT", 10, -yOffset)
+        checkbox:SetSize(16, 16)
+        checkbox:SetChecked(filter.default)
+        
+        local label = filtersPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
+        label:SetText(filter.name)
+        label:SetTextColor(0, 0, 0, 1)
+        label:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+        label:SetShadowColor(0, 0, 0, 0)
+        
+        mapWindow.mapFilters[filter.key] = {checkbox = checkbox, label = label}
+        yOffset = yOffset + 25
+    end
+    
+    -- Store references
+    mapWindow.filtersPanel = filtersPanel
+    
+    WoW95:Debug("Map filters panel created")
+end
+
+function Windows:CreateCoordinateDisplay(mapWindow)
+    -- Create coordinate display (bottom status bar)
+    local coordBar = CreateFrame("Frame", "WoW95MapCoordBar", mapWindow, "BackdropTemplate")
+    coordBar:SetPoint("BOTTOMLEFT", mapWindow, "BOTTOMLEFT", 15, 15)
+    coordBar:SetPoint("BOTTOMRIGHT", mapWindow, "BOTTOMRIGHT", -15, 15)
+    coordBar:SetHeight(20)
+    
+    -- Status bar background
+    coordBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    coordBar:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    coordBar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Coordinate text
+    local coordText = coordBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    coordText:SetPoint("LEFT", coordBar, "LEFT", 5, 0)
+    coordText:SetText("Coordinates: 50.0, 50.0")
+    coordText:SetTextColor(0, 0, 0, 1)
+    coordText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+    coordText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Zone info text
+    local zoneInfo = coordBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    zoneInfo:SetPoint("RIGHT", coordBar, "RIGHT", -5, 0)
+    zoneInfo:SetText("Stormwind City - Eastern Kingdoms")
+    zoneInfo:SetTextColor(0, 0, 0, 1)
+    zoneInfo:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+    zoneInfo:SetShadowColor(0, 0, 0, 0)
+    
+    -- Store references
+    mapWindow.coordBar = coordBar
+    mapWindow.coordText = coordText
+    mapWindow.zoneInfo = zoneInfo
+    
+    WoW95:Debug("Coordinate display created")
+end
+
+function Windows:InitializeMapSystem(mapWindow)
+    WoW95:Debug("Initializing map system...")
+    
+    -- Initialize map state
+    mapWindow.currentMapID = C_Map.GetBestMapForUnit("player") or 84 -- Default to Stormwind if no player map
+    mapWindow.zoomLevel = 1
+    mapWindow.playerWaypoint = nil
+    
+    -- Instead of hijacking WorldMapFrame, let's create our own map content
+    -- We'll show the actual map texture and overlays ourselves
+    self:LoadMapTextures(mapWindow)
+    
+    -- Set up update timer for coordinates and player position
+    local updateTimer = C_Timer.NewTicker(0.5, function()
+        if mapWindow:IsShown() then
+            self:UpdateMapDisplay(mapWindow)
+        end
+    end)
+    
+    mapWindow.updateTimer = updateTimer
+    
+    WoW95:Debug("Map system initialized with mapID: " .. (mapWindow.currentMapID or "unknown"))
+end
+
+function Windows:LoadMapTextures(mapWindow)
+    -- Create a proper map integration using WoW's map system
+    local mapInfo = C_Map.GetMapInfo(mapWindow.currentMapID)
+    
+    if not mapInfo then
+        WoW95:Debug("No map info available for mapID: " .. (mapWindow.currentMapID or "nil"))
+        return
+    end
+    
+    -- Clear existing map elements
+    if mapWindow.mapTexture then
+        mapWindow.mapTexture:Hide()
+    end
+    if mapWindow.worldMapContainer then
+        mapWindow.worldMapContainer:Hide()
+    end
+    
+    -- Create a container for the actual WorldMapFrame
+    local worldMapContainer = CreateFrame("Frame", "WoW95WorldMapContainer", mapWindow.mapFrame)
+    worldMapContainer:SetAllPoints(mapWindow.mapFrame)
+    worldMapContainer:SetFrameLevel(mapWindow.mapFrame:GetFrameLevel() + 1)
+    
+    -- Try to use the actual WorldMapFrame but contained within our window
+    if WorldMapFrame then
+        -- Store original parent and settings
+        if not mapWindow.originalMapParent then
+            mapWindow.originalMapParent = WorldMapFrame:GetParent()
+            mapWindow.originalMapShown = WorldMapFrame:IsShown()
+        end
+        
+        -- Reparent and resize the WorldMapFrame to fit our container
+        WorldMapFrame:SetParent(worldMapContainer)
+        WorldMapFrame:ClearAllPoints()
+        WorldMapFrame:SetAllPoints(worldMapContainer)
+        WorldMapFrame:Show()
+        
+        -- Make sure it displays the current map
+        if WorldMapFrame.SetMapID then
+            WorldMapFrame:SetMapID(mapWindow.currentMapID)
+        end
+        
+        WoW95:Debug("Integrated WorldMapFrame into custom window")
+    else
+        -- Fallback: Create our own simple map representation
+        local mapTexture = worldMapContainer:CreateTexture(nil, "BACKGROUND")
+        mapTexture:SetAllPoints(worldMapContainer)
+        mapTexture:SetColorTexture(0.2, 0.4, 0.2, 1) -- Green background as fallback
+        
+        local gridTexture = worldMapContainer:CreateTexture(nil, "ARTWORK")
+        gridTexture:SetAllPoints(worldMapContainer)
+        gridTexture:SetTexture("Interface\\Buttons\\WHITE8X8")
+        gridTexture:SetTexCoord(0, 4, 0, 4)
+        gridTexture:SetVertexColor(0.1, 0.1, 0.1, 0.3)
+        
+        mapWindow.mapTexture = mapTexture
+        mapWindow.gridTexture = gridTexture
+        
+        WoW95:Debug("Created fallback map representation")
+    end
+    
+    -- Update map title with current zone
+    if mapWindow.mapTitle and mapInfo.name then
+        mapWindow.mapTitle:SetText(mapInfo.name)
+    end
+    
+    -- Create our own player dot overlay
+    local playerDot = mapWindow.mapFrame:CreateTexture(nil, "OVERLAY")
+    playerDot:SetSize(10, 10)
+    playerDot:SetTexture("Interface\\Buttons\\WHITE8X8")
+    playerDot:SetVertexColor(1, 0, 0, 1) -- Red dot for player
+    playerDot:SetPoint("CENTER", mapWindow.mapFrame, "CENTER", 0, 0)
+    playerDot:SetDrawLayer("OVERLAY", 7) -- Ensure it's on top
+    
+    mapWindow.worldMapContainer = worldMapContainer
+    mapWindow.playerDot = playerDot
+    
+    WoW95:Debug("Loaded map for: " .. (mapInfo.name or "Unknown Zone"))
+end
+
+function Windows:UpdateMapDisplay(mapWindow)
+    -- Update player coordinates and position
+    local position = C_Map.GetPlayerMapPosition(mapWindow.currentMapID, "player")
+    if position then
+        local x, y = position:GetXY()
+        x = math.floor(x * 100 * 10) / 10
+        y = math.floor(y * 100 * 10) / 10
+        mapWindow.coordText:SetText("Coordinates: " .. x .. ", " .. y)
+        
+        -- Update player dot position on the map
+        if mapWindow.playerDot and mapWindow.mapFrame then
+            local frameWidth = mapWindow.mapFrame:GetWidth()
+            local frameHeight = mapWindow.mapFrame:GetHeight()
+            
+            -- Convert 0-1 coordinates to pixel offsets from center
+            local offsetX = (x / 100 - 0.5) * frameWidth
+            local offsetY = (0.5 - y / 100) * frameHeight -- Flip Y axis
+            
+            mapWindow.playerDot:SetPoint("CENTER", mapWindow.mapFrame, "CENTER", offsetX, offsetY)
+        end
+    else
+        mapWindow.coordText:SetText("Coordinates: Unknown")
+        
+        -- Hide player dot if no position available
+        if mapWindow.playerDot then
+            mapWindow.playerDot:Hide()
+        end
+    end
+    
+    -- Update zone information
+    local mapInfo = C_Map.GetMapInfo(mapWindow.currentMapID)
+    if mapInfo then
+        local parentMapInfo = C_Map.GetMapInfo(mapInfo.parentMapID)
+        local zoneText = mapInfo.name
+        if parentMapInfo then
+            zoneText = zoneText .. " - " .. parentMapInfo.name
+        end
+        mapWindow.zoneInfo:SetText(zoneText)
+        mapWindow.currentZoneText:SetText("Current Zone:\n" .. mapInfo.name)
+        
+        -- Show player dot if we have valid zone info
+        if mapWindow.playerDot then
+            mapWindow.playerDot:Show()
+        end
+    end
+end
+
+-- Map control functions
+function Windows:ZoomMapOut(mapWindow)
+    WoW95:Debug("Zooming out...")
+    -- Try to zoom out to parent map
+    local currentMapInfo = C_Map.GetMapInfo(mapWindow.currentMapID)
+    if currentMapInfo and currentMapInfo.parentMapID and currentMapInfo.parentMapID ~= 0 then
+        mapWindow.currentMapID = currentMapInfo.parentMapID
+        self:LoadMapTextures(mapWindow)
+        WoW95:Debug("Zoomed out to: " .. (C_Map.GetMapInfo(mapWindow.currentMapID).name or "Unknown"))
+    else
+        WoW95:Debug("Cannot zoom out further")
+    end
+end
+
+function Windows:ZoomMapIn(mapWindow)
+    WoW95:Debug("Zooming in...")
+    -- This would typically zoom into a child map - for now just show current player zone
+    local playerMapID = C_Map.GetBestMapForUnit("player")
+    if playerMapID and playerMapID ~= mapWindow.currentMapID then
+        mapWindow.currentMapID = playerMapID
+        self:LoadMapTextures(mapWindow)
+        WoW95:Debug("Zoomed in to player zone: " .. (C_Map.GetMapInfo(mapWindow.currentMapID).name or "Unknown"))
+    else
+        WoW95:Debug("Already at player zone level")
+    end
+end
+
+function Windows:CenterMapOnPlayer(mapWindow)
+    WoW95:Debug("Centering on player...")
+    -- Switch to player's current map
+    local playerMapID = C_Map.GetBestMapForUnit("player")
+    if playerMapID then
+        mapWindow.currentMapID = playerMapID
+        self:LoadMapTextures(mapWindow)
+        WoW95:Debug("Centered on player in: " .. (C_Map.GetMapInfo(mapWindow.currentMapID).name or "Unknown"))
+    end
+end
+
+function Windows:SearchMap(mapWindow, searchTerm)
+    WoW95:Debug("Searching for: " .. (searchTerm or ""))
+    -- Basic search functionality - in a full implementation this would search for NPCs, locations, etc.
+    if searchTerm and searchTerm ~= "" and searchTerm ~= "Search..." then
+        WoW95:Print("Map search for '" .. searchTerm .. "' - feature coming soon!")
+        -- Clear the search box
+        mapWindow.searchBox:SetText("")
+        mapWindow.searchBox:ClearFocus()
+    end
+end
+
+-- World Map Reskinning System
+function Windows:ReskinWorldMapFrame(frameName, program)
+    WoW95:Debug("=== RESKIN WORLD MAP CALLED ===")
+    WoW95:Print("Reskinning WorldMapFrame with Windows 95 style...")
+    
+    if not WorldMapFrame then
+        WoW95:Debug("WorldMapFrame not found, cannot reskin")
+        WoW95:Print("ERROR: WorldMapFrame not found!")
+        return
+    end
+    
+    -- Check if we're toggling the map (pressing M again)
+    if self.programWindows[frameName] and WorldMapFrame:IsShown() then
+        -- Map is already reskinned and shown, so close it
+        WoW95:Debug("Map already reskinned, closing it")
+        WorldMapFrame:Hide()
+        return
+    end
+    
+    -- Don't create duplicate windows
+    if self.programWindows[frameName] then 
+        WoW95:Debug("WorldMapFrame already reskinned")
+        local existingFrame = self.programWindows[frameName] 
+        if existingFrame and existingFrame:IsShown() then
+            existingFrame:Raise()
+        end
+        return
+    end
+    
+    -- Apply Windows 95 styling to the existing WorldMapFrame
+    self:ApplyWindows95StyleToWorldMap()
+    
+    -- Ensure the WorldMapFrame remains visible and interactive
+    WorldMapFrame:SetAlpha(1)
+    WorldMapFrame:EnableMouse(true)
+    WorldMapFrame:Show()
+    
+    -- Lock the frame position and size to prevent jumping
+    WorldMapFrame:ClearAllPoints()
+    WorldMapFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    
+    -- Make the window just big enough for the map content (smaller, more compact)
+    WorldMapFrame:SetSize(800, 600)
+    
+    -- Prevent Blizzard from changing our size/position
+    WorldMapFrame:SetResizable(false)
+    WorldMapFrame:SetMovable(false)
+    
+    -- Hook into position/size changes to prevent jumping
+    local originalSetPoint = WorldMapFrame.SetPoint
+    WorldMapFrame.SetPoint = function(self, ...)
+        -- Ignore position changes from other sources
+        WoW95:Debug("Blocked position change attempt")
+    end
+    
+    local originalSetSize = WorldMapFrame.SetSize
+    WorldMapFrame.SetSize = function(self, ...)
+        -- Ignore size changes from other sources
+        WoW95:Debug("Blocked size change attempt")
+    end
+    
+    -- Store original functions for cleanup
+    WorldMapFrame.wow95OriginalSetPoint = originalSetPoint
+    WorldMapFrame.wow95OriginalSetSize = originalSetSize
+    
+    -- Store reference for taskbar
+    self.programWindows[frameName] = WorldMapFrame
+    WorldMapFrame.programName = program.name
+    WorldMapFrame.frameName = frameName
+    WorldMapFrame.isWoW95Window = true
+    WorldMapFrame.isProgramWindow = true
+    
+    -- Notify taskbar
+    WoW95:OnWindowOpened(WorldMapFrame)
+    
+    WoW95:Debug("WorldMapFrame reskinned successfully")
+    WoW95:Print("WorldMapFrame reskinned successfully!")
+end
+
+function Windows:CleanupWorldMapReskin(frameName)
+    WoW95:Debug("Cleaning up WorldMapFrame reskin")
+    
+    -- Get reference to our program window before clearing it
+    local programWindow = self.programWindows[frameName]
+    
+    -- Remove our reference
+    self.programWindows[frameName] = nil
+    
+    -- Clean up any custom UI elements we added
+    if WorldMapFrame and WorldMapFrame.wow95MapUI then
+        WorldMapFrame.wow95MapUI:Hide()
+    end
+    
+    -- Clean up positioning timers
+    if WorldMapFrame and WorldMapFrame.wow95PositionTimer then
+        WorldMapFrame.wow95PositionTimer:Cancel()
+        WorldMapFrame.wow95PositionTimer = nil
+    end
+    
+    -- Reset WorldMapFrame state
+    if WorldMapFrame then
+        WorldMapFrame.wow95SettingPoint = false
+        WorldMapFrame.wow95PositionLocked = false
+    end
+    
+    -- Notify taskbar with the original WorldMapFrame reference
+    if programWindow then
+        WoW95:OnWindowClosed(programWindow)
+    elseif WorldMapFrame then
+        WoW95:OnWindowClosed(WorldMapFrame)
+    end
+    
+    WoW95:Debug("WorldMapFrame cleanup completed")
+end
+
+function Windows:CleanupQuestLogWindow(frameName)
+    WoW95:Debug("Cleaning up QuestLogFrame window")
+    
+    -- Get our quest log window
+    local questLogWindow = self.programWindows[frameName]
+    if questLogWindow then
+        -- Hide the window
+        questLogWindow:Hide()
+        
+        -- Remove our reference
+        self.programWindows[frameName] = nil
+        
+        -- Notify taskbar
+        WoW95:OnWindowClosed(questLogWindow)
+    end
+end
+
+-- Add slash command for manual testing
+SLASH_WOW95MAP1 = "/wow95map"
+SlashCmdList["WOW95MAP"] = function()
+    WoW95:Print("Manual map reskinning triggered...")
+    if WorldMapFrame then
+        WoW95:Print("Found WorldMapFrame, applying styling...")
+        WoW95.Windows:ApplyWindows95StyleToWorldMap()
+        WoW95:Print("Map styling applied!")
+    else
+        WoW95:Print("WorldMapFrame not found - try opening the map first")
+    end
+end
+
+-- Debug command to inspect map structure
+SLASH_WOW95MAPDBG1 = "/wow95mapdbg"
+SlashCmdList["WOW95MAPDBG"] = function()
+    if not WorldMapFrame then
+        WoW95:Print("WorldMapFrame not found")
+        return
+    end
+    
+    WoW95:Print("=== WORLD MAP DEBUG INFO ===")
+    WoW95:Print("WorldMapFrame shown: " .. tostring(WorldMapFrame:IsShown()))
+    WoW95:Print("WorldMapFrame alpha: " .. WorldMapFrame:GetAlpha())
+    
+    if WorldMapFrame.ScrollContainer then
+        WoW95:Print("ScrollContainer exists: " .. tostring(WorldMapFrame.ScrollContainer:IsShown()))
+        WoW95:Print("ScrollContainer alpha: " .. WorldMapFrame.ScrollContainer:GetAlpha())
+        WoW95:Print("ScrollContainer frame level: " .. WorldMapFrame.ScrollContainer:GetFrameLevel())
+        
+        local children = {WorldMapFrame.ScrollContainer:GetChildren()}
+        WoW95:Print("ScrollContainer has " .. #children .. " children")
+        for i, child in pairs(children) do
+            local name = child:GetName() or "unnamed"
+            WoW95:Print("  Child " .. i .. ": " .. name .. " (shown: " .. tostring(child:IsShown()) .. ")")
+        end
+    else
+        WoW95:Print("ScrollContainer not found")
+    end
+end
+
+-- Alternative approach - hook the ToggleWorldMap function directly
+local function HookMapToggle()
+    if ToggleWorldMap then
+        local originalToggle = ToggleWorldMap
+        ToggleWorldMap = function(...)
+            WoW95:Print("=== MAP TOGGLE DETECTED ===")
+            local result = originalToggle(...)
+            
+            -- Apply styling after a brief delay to ensure the frame is fully loaded
+            C_Timer.After(0.1, function()
+                if WorldMapFrame and WorldMapFrame:IsShown() then
+                    WoW95:Print("Map is shown, applying Windows 95 styling...")
+                    WoW95.Windows:ApplyWindows95StyleToWorldMap()
+                    
+                    -- Ensure map stays visible after styling
+                    WorldMapFrame:SetAlpha(1)
+                    WorldMapFrame:EnableMouse(true)
+                    WorldMapFrame:Show()
+                    WoW95:Print("Map visibility restored after styling")
+                end
+            end)
+            
+            return result
+        end
+        WoW95:Print("Hooked ToggleWorldMap function")
+    else
+        WoW95:Print("ToggleWorldMap function not found")
+    end
+end
+
+-- Try to hook the map toggle when this module loads
+C_Timer.After(2, HookMapToggle)
+
+function Windows:ApplyWindows95StyleToWorldMap()
+    if not WorldMapFrame then return end
+    
+    WoW95:Debug("Completely replacing WorldMapFrame UI with Windows 95 theme...")
+    
+    -- Disable all zoom functionality
+    self:DisableMapZoom()
+    
+    -- STEP 1: Hide EVERYTHING from Blizzard's UI except the actual map canvas
+    self:HideAllBlizzardMapUI()
+    
+    -- STEP 2: Create our own Windows 95 UI framework
+    self:CreateWindows95MapFramework()
+    
+    -- STEP 3: Ensure the map canvas is visible and properly positioned
+    self:EnsureMapCanvasVisible()
+    
+    -- STEP 4: Lock the map to prevent jumping
+    self:LockMapPosition()
+    
+    WoW95:Debug("Complete Windows 95 map UI replacement finished")
+end
+
+function Windows:DisableMapZoom()
+    WoW95:Debug("Disabling map zoom functionality...")
+    
+    -- Disable mouse wheel zoom
+    if WorldMapFrame.ScrollContainer then
+        WorldMapFrame.ScrollContainer:EnableMouseWheel(false)
+        
+        -- Override zoom functions
+        if WorldMapFrame.ScrollContainer.ZoomIn then
+            WorldMapFrame.ScrollContainer.ZoomIn = function() end
+        end
+        if WorldMapFrame.ScrollContainer.ZoomOut then
+            WorldMapFrame.ScrollContainer.ZoomOut = function() end
+        end
+    end
+    
+    -- Disable zoom buttons if they exist
+    if WorldMapFrame.MaximizeButton then
+        WorldMapFrame.MaximizeButton:Hide()
+    end
+    if WorldMapFrame.MinimizeButton then
+        WorldMapFrame.MinimizeButton:Hide()
+    end
+    
+    -- Set a fixed zoom level
+    if C_Map and C_Map.SetMapZoom then
+        C_Map.SetMapZoom(1)
+    end
+end
+
+function Windows:LockMapPosition()
+    WoW95:Debug("Locking map position to prevent jumping...")
+    
+    if not WorldMapFrame.ScrollContainer then return end
+    
+    -- Store the desired position
+    local container = WorldMapFrame.ScrollContainer
+    
+    -- Disable all panning
+    container:EnableMouse(false)
+    
+    -- Override SetPoint to prevent movement
+    local oldSetPoint = container.SetPoint
+    container.wow95OldSetPoint = oldSetPoint
+    container.SetPoint = function(self, point, relativeTo, relativePoint, x, y)
+        -- Only allow our specific positioning
+        if point == "TOPLEFT" and relativeTo == WorldMapFrame.wow95MapBG then
+            oldSetPoint(self, point, relativeTo, relativePoint, x, y)
+        end
+    end
+    
+    -- Center the map content
+    container:ClearAllPoints()
+    if WorldMapFrame.wow95MapBG then
+        container:SetAllPoints(WorldMapFrame.wow95MapBG)
+    else
+        container:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 10, -60)
+        container:SetPoint("BOTTOMRIGHT", WorldMapFrame, "BOTTOMRIGHT", -10, 10)
+    end
+end
+
+function Windows:HideAllBlizzardMapUI()
+    WoW95:Debug("Hiding all Blizzard UI elements...")
+    
+    -- List of specific frame names to hide
+    local framesToHide = {
+        "MinimaxFrame", "BorderFrame", "NavBar", "QuestMapFrame",
+        "SidePanelToggle", "TitleContainer", "BlackoutFrame"
+    }
+    
+    -- Hide specific named frames
+    for _, frameName in ipairs(framesToHide) do
+        if WorldMapFrame[frameName] then
+            WorldMapFrame[frameName]:Hide()
+            WorldMapFrame[frameName]:SetAlpha(0)
+        end
+    end
+    
+    -- Hide all child frames except the scroll container (which contains the map)
+    local children = {WorldMapFrame:GetChildren()}
+    for _, child in pairs(children) do
+        if child and child ~= WorldMapFrame.ScrollContainer then
+            child:Hide()
+            child:SetAlpha(0)
+            
+            -- Also disable mouse interaction on hidden frames
+            if child.EnableMouse then
+                child:EnableMouse(false)
+            end
+        end
+    end
+    
+    -- Hide all textures on the main frame
+    for i = 1, WorldMapFrame:GetNumRegions() do
+        local region = select(i, WorldMapFrame:GetRegions())
+        if region and region:GetObjectType() == "Texture" then
+            region:Hide()
+            region:SetAlpha(0)
+        end
+    end
+    
+    -- Hide overlays and details that might be on the ScrollContainer
+    if WorldMapFrame.ScrollContainer then
+        local scrollChildren = {WorldMapFrame.ScrollContainer:GetChildren()}
+        for _, child in pairs(scrollChildren) do
+            local name = child:GetName() or ""
+            -- Keep only the actual map canvas
+            if not string.find(name, "Canvas") and not string.find(name, "Map") then
+                child:Hide()
+                child:SetAlpha(0)
+            end
+        end
+    end
+    
+    WoW95:Debug("Blizzard UI hidden")
+end
+
+function Windows:CreateWindows95MapFramework()
+    WoW95:Debug("Creating complete Windows 95 map interface...")
+    
+    -- Create our own UI container that doesn't interfere with the map
+    local mapUI = CreateFrame("Frame", "WoW95MapUI", WorldMapFrame, "BackdropTemplate")
+    mapUI:SetAllPoints(WorldMapFrame)
+    mapUI:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 1)
+    
+    -- Add Windows 95 window background
+    mapUI:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    mapUI:SetBackdropColor(unpack(WoW95.colors.window))
+    mapUI:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    WorldMapFrame.wow95MapUI = mapUI
+    
+    -- Create Windows 95 title bar
+    self:CreateWindows95TitleBar(mapUI, "World Map - World of Warcraft")
+    
+    -- Create zone navigation toolbar
+    self:CreateWindows95ZoneToolbar(mapUI)
+    
+    -- Create map control buttons
+    self:CreateWindows95MapControls(mapUI)
+    
+    -- Create side panels
+    self:CreateWindows95MapSidePanels(mapUI)
+    
+    WoW95:Debug("Windows 95 map framework created")
+end
+
+function Windows:EnsureMapCanvasVisible()
+    WoW95:Debug("Ensuring map canvas is visible...")
+    
+    -- Create map background that fills the space between toolbar and quest log
+    if not WorldMapFrame.wow95MapBG then
+        local mapBG = CreateFrame("Frame", "WoW95MapBackground", WorldMapFrame.wow95MapUI, "BackdropTemplate")
+        mapBG:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 2, -58) -- Below title and toolbar
+        mapBG:SetPoint("BOTTOMRIGHT", WorldMapFrame, "BOTTOMRIGHT", -185, 25) -- Adjust for smaller window
+        
+        mapBG:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 2,
+            insets = {left = 2, right = 2, top = 2, bottom = 2}
+        })
+        mapBG:SetBackdropColor(unpack(WoW95.colors.window))
+        mapBG:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+        mapBG:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 2)
+        
+        WorldMapFrame.wow95MapBG = mapBG
+        WoW95:Debug("Created grey background for map area")
+    end
+    
+    if WorldMapFrame.ScrollContainer then
+        -- Force the map canvas to fill and be centered in background area
+        local function LockMapPosition()
+            if not WorldMapFrame.wow95SettingPoint then
+                WorldMapFrame.wow95SettingPoint = true
+                
+                -- Check if we actually need to reposition (to reduce visual jumping)
+                local needsRepositioning = false
+                local currentScale = WorldMapFrame.ScrollContainer:GetScale()
+                local numPoints = WorldMapFrame.ScrollContainer:GetNumPoints()
+                
+                if math.abs(currentScale - 1) > 0.01 or numPoints ~= 1 then
+                    needsRepositioning = true
+                else
+                    local point, relativeTo = WorldMapFrame.ScrollContainer:GetPoint(1)
+                    if relativeTo ~= WorldMapFrame.wow95MapBG or point ~= "TOPLEFT" then
+                        needsRepositioning = true
+                    end
+                end
+                
+                if needsRepositioning then
+                    WorldMapFrame.ScrollContainer:ClearAllPoints()
+                    WorldMapFrame.ScrollContainer:SetAllPoints(WorldMapFrame.wow95MapBG)
+                    WorldMapFrame.ScrollContainer:SetScale(1)
+                end
+                
+                WorldMapFrame.wow95SettingPoint = false
+            end
+        end
+        
+        -- Initial positioning
+        LockMapPosition()
+        
+        -- Aggressive position and scale locking
+        if not WorldMapFrame.wow95PositionLocked then
+            -- Store timer reference so we can cancel it during transitions
+            WorldMapFrame.wow95PositionTimer = C_Timer.NewTicker(0.1, function()
+                if WorldMapFrame.wow95MapBG and WorldMapFrame:IsShown() and not WorldMapFrame.wow95SettingPoint then
+                    -- Check if position or scale changed
+                    local numPoints = WorldMapFrame.ScrollContainer:GetNumPoints()
+                    local scale = WorldMapFrame.ScrollContainer:GetScale()
+                    
+                    if numPoints ~= 1 or scale ~= 1 then
+                        LockMapPosition()
+                    else
+                        -- Check if it's still anchored correctly
+                        local point, relativeTo = WorldMapFrame.ScrollContainer:GetPoint(1)
+                        if relativeTo ~= WorldMapFrame.wow95MapBG or point ~= "TOPLEFT" then
+                            LockMapPosition()
+                        end
+                    end
+                end
+            end)
+            
+            -- Also lock on any map change events
+            if WorldMapFrame.OnMapChanged then
+                hooksecurefunc(WorldMapFrame, "OnMapChanged", function()
+                    -- Only lock position if we're not in the middle of a zone transition
+                    if not WorldMapFrame.wow95SettingPoint then
+                        C_Timer.After(0.05, LockMapPosition)
+                    end
+                end)
+            end
+            
+            WorldMapFrame.wow95PositionLocked = true
+        end
+        
+        -- Ensure it's at the right frame level (above background)
+        WorldMapFrame.ScrollContainer:SetFrameLevel(WorldMapFrame.wow95MapBG:GetFrameLevel() + 1)
+        
+        -- Make sure it's visible
+        WorldMapFrame.ScrollContainer:Show()
+        WorldMapFrame.ScrollContainer:SetAlpha(1)
+        
+        WoW95:Debug("Map canvas positioned and locked")
+    else
+        WoW95:Debug("ERROR: ScrollContainer not found!")
+    end
+end
+
+-- Function to restart the position timer after zone transitions
+function Windows:RestartPositionTimer()
+    if not WorldMapFrame or not WorldMapFrame.wow95MapBG then
+        return
+    end
+    
+    -- Cancel existing timer if it exists
+    if WorldMapFrame.wow95PositionTimer then
+        WorldMapFrame.wow95PositionTimer:Cancel()
+        WorldMapFrame.wow95PositionTimer = nil
+    end
+    
+    -- Get the LockMapPosition function (need to recreate local reference)
+    local function LockMapPosition()
+        if not WorldMapFrame.wow95SettingPoint then
+            WorldMapFrame.wow95SettingPoint = true
+            
+            -- Check if we actually need to reposition (to reduce visual jumping)
+            local needsRepositioning = false
+            local currentScale = WorldMapFrame.ScrollContainer:GetScale()
+            local numPoints = WorldMapFrame.ScrollContainer:GetNumPoints()
+            
+            if math.abs(currentScale - 1) > 0.01 or numPoints ~= 1 then
+                needsRepositioning = true
+            else
+                local point, relativeTo = WorldMapFrame.ScrollContainer:GetPoint(1)
+                if relativeTo ~= WorldMapFrame.wow95MapBG or point ~= "TOPLEFT" then
+                    needsRepositioning = true
+                end
+            end
+            
+            if needsRepositioning then
+                WorldMapFrame.ScrollContainer:ClearAllPoints()
+                WorldMapFrame.ScrollContainer:SetAllPoints(WorldMapFrame.wow95MapBG)
+                WorldMapFrame.ScrollContainer:SetScale(1)
+            end
+            
+            WorldMapFrame.wow95SettingPoint = false
+        end
+    end
+    
+    -- Restart the position timer
+    WorldMapFrame.wow95PositionTimer = C_Timer.NewTicker(0.1, function()
+        if WorldMapFrame.wow95MapBG and WorldMapFrame:IsShown() and not WorldMapFrame.wow95SettingPoint then
+            -- Check if position or scale changed
+            local numPoints = WorldMapFrame.ScrollContainer:GetNumPoints()
+            local scale = WorldMapFrame.ScrollContainer:GetScale()
+            
+            if numPoints ~= 1 or scale ~= 1 then
+                LockMapPosition()
+            else
+                -- Check if it's still anchored correctly
+                local point, relativeTo = WorldMapFrame.ScrollContainer:GetPoint(1)
+                if relativeTo ~= WorldMapFrame.wow95MapBG or point ~= "TOPLEFT" then
+                    LockMapPosition()
+                end
+            end
+        end
+    end)
+    
+    WoW95:Debug("Position timer restarted")
+end
+
+function Windows:CreateWindows95ZoneToolbar(parent)
+    WoW95:Debug("Creating Windows 95 zone navigation toolbar...")
+    
+    local toolbar = CreateFrame("Frame", "WoW95MapToolbar", parent, "BackdropTemplate")
+    toolbar:SetPoint("TOPLEFT", parent, "TOPLEFT", 2, -28) -- Below title bar
+    toolbar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -2, -28)
+    toolbar:SetHeight(28)
+    
+    toolbar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    toolbar:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    toolbar:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+    
+    -- Add zone navigation buttons here
+    self:CreateZoneNavigationButtons(toolbar)
+    
+    parent.toolbar = toolbar
+    WoW95:Debug("Zone toolbar created")
+end
+
+function Windows:CreateZoneNavigationButtons(toolbar)
+    WoW95:Debug("Creating zone navigation buttons...")
+    
+    -- Store toolbar reference
+    WorldMapFrame.wow95ZoneToolbar = toolbar
+    
+    -- Update the buttons dynamically based on current map
+    self:UpdateZoneNavigationButtons(toolbar)
+    
+    -- Hook map changes to update buttons
+    if not WorldMapFrame.wow95MapUpdateHooked then
+        hooksecurefunc(WorldMapFrame, "OnMapChanged", function()
+            if WorldMapFrame.wow95ZoneToolbar then
+                Windows:UpdateZoneNavigationButtons(WorldMapFrame.wow95ZoneToolbar)
+            end
+        end)
+        WorldMapFrame.wow95MapUpdateHooked = true
+    end
+end
+
+function Windows:UpdateZoneNavigationButtons(toolbar)
+    -- Clear existing buttons
+    local children = {toolbar:GetChildren()}
+    for _, child in pairs(children) do
+        if child:GetObjectType() == "Button" then
+            child:Hide()
+            child:SetParent(nil)
+        end
+    end
+    
+    -- Get current map info and hierarchy
+    local mapID = WorldMapFrame:GetMapID() or C_Map.GetBestMapForUnit("player")
+    if not mapID then return end
+    
+    local mapInfo = C_Map.GetMapInfo(mapID)
+    if not mapInfo then return end
+    
+    -- Build zone hierarchy
+    local hierarchy = {}
+    local currentMapID = mapID
+    
+    while currentMapID do
+        local info = C_Map.GetMapInfo(currentMapID)
+        if info then
+            table.insert(hierarchy, 1, {name = info.name, mapID = currentMapID})
+            currentMapID = info.parentMapID
+        else
+            break
+        end
+    end
+    
+    -- Add World at the beginning if not present
+    if #hierarchy == 0 or hierarchy[1].mapID ~= 946 then
+        table.insert(hierarchy, 1, {name = "World", mapID = 946})
+    end
+    
+    -- Create buttons for hierarchy
+    local xPos = 3
+    local spacing = 2
+    
+    for i, zoneData in ipairs(hierarchy) do
+        -- Calculate button width based on text
+        local textWidth = string.len(zoneData.name) * 7 + 15
+        local buttonWidth = math.max(60, math.min(120, textWidth))
+        
+        local btn = WoW95:CreateButton("WoW95ZoneBtn" .. i, toolbar, buttonWidth, 20, zoneData.name)
+        btn:SetPoint("LEFT", toolbar, "LEFT", xPos, 0)
+        
+        -- Style as active/inactive
+        if zoneData.mapID == mapID then
+            -- Current zone - highlight
+            btn:SetBackdropColor(0.3, 0.3, 0.8, 1)
+            btn:SetText("> " .. zoneData.name)
+        end
+        
+        -- Add click functionality
+        btn:SetScript("OnClick", function()
+            WoW95:Debug("Zone button clicked: " .. zoneData.name .. " (MapID: " .. zoneData.mapID .. ")")
+            
+            -- Completely disable position locking during map transition
+            if WorldMapFrame then
+                WoW95:Debug("Disabling position locks for zone transition...")
+                WorldMapFrame.wow95SettingPoint = true
+                
+                -- Cancel the position lock timer temporarily
+                if WorldMapFrame.wow95PositionTimer then
+                    WorldMapFrame.wow95PositionTimer:Cancel()
+                    WorldMapFrame.wow95PositionTimer = nil
+                    WoW95:Debug("Cancelled position lock timer")
+                end
+                
+                -- Completely hide the map during transition to prevent any visual movement
+                if WorldMapFrame.ScrollContainer then
+                    WorldMapFrame.ScrollContainer:Hide()
+                    WoW95:Debug("Hidden ScrollContainer during transition")
+                end
+            end
+            
+            -- Clear any existing waypoint first
+            if C_Map and C_Map.SetUserWaypoint then
+                C_Map.ClearUserWaypoint()
+            end
+            
+            -- Set the map ID
+            if WorldMapFrame:IsShown() then
+                WoW95:Debug("Setting map ID to: " .. zoneData.mapID)
+                
+                -- Lock position before changing zone to prevent jumping
+                if WorldMapFrame.ScrollContainer and WorldMapFrame.wow95MapBG then
+                    WorldMapFrame.ScrollContainer:SetClampedToScreen(true)
+                    WorldMapFrame.ScrollContainer:ClearAllPoints()
+                    WorldMapFrame.ScrollContainer:SetAllPoints(WorldMapFrame.wow95MapBG)
+                end
+                
+                WorldMapFrame:SetMapID(zoneData.mapID)
+                
+                -- Quickly re-lock position after zone change
+                C_Timer.After(0.05, function()
+                    if WorldMapFrame and WorldMapFrame.ScrollContainer and WorldMapFrame.wow95MapBG then
+                        WorldMapFrame.ScrollContainer:ClearAllPoints()
+                        WorldMapFrame.ScrollContainer:SetAllPoints(WorldMapFrame.wow95MapBG)
+                        WorldMapFrame.ScrollContainer:SetScale(1)
+                    end
+                end)
+            else
+                -- If map is not shown, show it with the specified map
+                ShowUIPanel(WorldMapFrame)
+                C_Timer.After(0.1, function()
+                    WoW95:Debug("Setting map ID to: " .. zoneData.mapID .. " (delayed)")
+                    WorldMapFrame:SetMapID(zoneData.mapID)
+                    
+                    -- Lock position after map loads
+                    C_Timer.After(0.1, function()
+                        if WorldMapFrame and WorldMapFrame.ScrollContainer and WorldMapFrame.wow95MapBG then
+                            WorldMapFrame.ScrollContainer:SetClampedToScreen(true)
+                            WorldMapFrame.ScrollContainer:ClearAllPoints()
+                            WorldMapFrame.ScrollContainer:SetAllPoints(WorldMapFrame.wow95MapBG)
+                            WorldMapFrame.ScrollContainer:SetScale(1)
+                        end
+                    end)
+                end)
+            end
+        end)
+        
+        xPos = xPos + buttonWidth + spacing
+    end
+    
+    WoW95:Debug("Zone navigation buttons created")
+end
+
+function Windows:CreateWindows95MapControls(parent)
+    WoW95:Debug("Creating Windows 95 map controls...")
+    
+    -- Create control panel at bottom
+    local controlPanel = CreateFrame("Frame", "WoW95MapControls", parent, "BackdropTemplate")
+    controlPanel:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 5, 5)
+    controlPanel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -5, 5)
+    controlPanel:SetHeight(25)
+    
+    controlPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    controlPanel:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    controlPanel:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+    
+    -- Add zoom and other control buttons
+    local zoomOutBtn = WoW95:CreateButton("WoW95MapZoomOut", controlPanel, 60, 20, "Zoom -")
+    zoomOutBtn:SetPoint("LEFT", controlPanel, "LEFT", 5, 0)
+    
+    local zoomInBtn = WoW95:CreateButton("WoW95MapZoomIn", controlPanel, 60, 20, "Zoom +")
+    zoomInBtn:SetPoint("LEFT", zoomOutBtn, "RIGHT", 5, 0)
+    
+    parent.controlPanel = controlPanel
+    WoW95:Debug("Map controls created")
+end
+
+function Windows:CreateWindows95MapSidePanels(parent)
+    WoW95:Debug("Creating Windows 95 quest log panel...")
+    
+    -- Create full quest log panel (right side) - like vanilla UI
+    local questLogPanel = CreateFrame("Frame", "WoW95MapQuestLogPanel", parent, "BackdropTemplate")
+    questLogPanel:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -5, -60) -- Below toolbar
+    questLogPanel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -5, 35) -- Above controls
+    questLogPanel:SetWidth(200)
+    
+    questLogPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    questLogPanel:SetBackdropColor(unpack(WoW95.colors.window))
+    questLogPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create title bar for quest log
+    local titleBar = CreateFrame("Frame", nil, questLogPanel, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", questLogPanel, "TOPLEFT", 2, -2)
+    titleBar:SetPoint("TOPRIGHT", questLogPanel, "TOPRIGHT", -2, -2)
+    titleBar:SetHeight(20)
+    
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    titleBar:SetBackdropColor(unpack(WoW95.colors.titleBar))
+    titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    -- Quest log title
+    local questTitle = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    questTitle:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
+    questTitle:SetText("Quest Log")
+    questTitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    questTitle:SetTextColor(unpack(WoW95.colors.titleBarText))
+    questTitle:SetShadowColor(0, 0, 0, 0)
+    
+    -- Create scrollable quest list area
+    local scrollFrame = CreateFrame("ScrollFrame", "WoW95QuestLogScroll", questLogPanel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 5, -5)
+    scrollFrame:SetPoint("BOTTOMRIGHT", questLogPanel, "BOTTOMRIGHT", -25, 5)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(scrollFrame:GetWidth(), 1)
+    scrollFrame:SetScrollChild(scrollChild)
+    
+    -- Populate quest log
+    self:PopulateQuestLogProper(scrollChild)
+    
+    parent.questLogPanel = questLogPanel
+    parent.questLogScrollFrame = scrollFrame
+    parent.questLogScrollChild = scrollChild
+    
+    WoW95:Debug("Quest log panel created")
+end
+
+function Windows:PopulateQuestLogProper(scrollChild)
+    WoW95:Debug("Populating quest log with proper API...")
+    
+    -- Initialize saved variables for zone states if not exists
+    if not WoW95DB then
+        WoW95DB = {}
+    end
+    if not WoW95DB.questLogZoneStates then
+        WoW95DB.questLogZoneStates = {}
+    end
+    
+    -- Preserve collapse state from saved variables
+    local preservedState = WoW95DB.questLogZoneStates
+    
+    -- Clear existing quest entries
+    local children = {scrollChild:GetChildren()}
+    for _, child in pairs(children) do
+        child:Hide()
+        child:SetParent(nil)
+    end
+    
+    local yPos = -5
+    local totalQuestCount = 0
+    
+    -- Build proper quest structure
+    local questsByZone = {}
+    local zoneOrder = {}
+    
+    -- Get all quests
+    local numEntries = C_QuestLog.GetNumQuestLogEntries()
+    local currentZone = "Uncategorized"
+    
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if info then
+            if info.isHeader then
+                -- This is a zone header
+                currentZone = info.title or "Unknown"
+                if not questsByZone[currentZone] then
+                    questsByZone[currentZone] = {
+                        quests = {},
+                        isCollapsed = preservedState[currentZone] or false,
+                        headerIndex = i
+                    }
+                    table.insert(zoneOrder, currentZone)
+                end
+            elseif not info.isHidden and info.questID then
+                -- This is a quest
+                if not questsByZone[currentZone] then
+                    questsByZone[currentZone] = {
+                        quests = {},
+                        isCollapsed = preservedState[currentZone] or false,
+                        headerIndex = 0
+                    }
+                    table.insert(zoneOrder, currentZone)
+                end
+                
+                table.insert(questsByZone[currentZone].quests, {
+                    questID = info.questID,
+                    title = info.title or "Unknown Quest",
+                    level = info.level or 1,
+                    isComplete = C_QuestLog.IsComplete(info.questID) or false,
+                    questLogIndex = i
+                })
+                totalQuestCount = totalQuestCount + 1
+            end
+        end
+    end
+    
+    WoW95:Debug("Found " .. totalQuestCount .. " quests in " .. #zoneOrder .. " zones")
+    
+    -- Create UI for each zone with quests
+    for _, zoneName in ipairs(zoneOrder) do
+        local zoneData = questsByZone[zoneName]
+        if #zoneData.quests > 0 then
+            -- Create zone header
+            local zoneFrame = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
+            zoneFrame:SetSize(scrollChild:GetWidth() - 10, 20)
+            zoneFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, yPos)
+            
+            -- Zone header background
+            zoneFrame:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                tile = true,
+                tileSize = 8,
+                edgeSize = 1,
+                insets = {left = 1, right = 1, top = 1, bottom = 1}
+            })
+            zoneFrame:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+            zoneFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+            
+            -- Expand/Collapse icon
+            local expandIcon = zoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            expandIcon:SetPoint("LEFT", zoneFrame, "LEFT", 5, 0)
+            expandIcon:SetText(zoneData.isCollapsed and "[+]" or "[-]")
+            expandIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+            expandIcon:SetTextColor(0, 0, 0, 1)
+            
+            -- Zone name with quest count
+            local zoneText = zoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            zoneText:SetPoint("LEFT", expandIcon, "RIGHT", 5, 0)
+            zoneText:SetText(zoneName .. " (" .. #zoneData.quests .. ")")
+            zoneText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+            zoneText:SetTextColor(0.6, 0.6, 0, 1)
+            
+            -- Store data
+            zoneFrame.zoneName = zoneName
+            zoneFrame.zoneData = zoneData
+            zoneFrame.expandIcon = expandIcon
+            
+            -- Click handler for expand/collapse
+            zoneFrame:SetScript("OnClick", function(self)
+                WoW95:Debug("Zone clicked: " .. self.zoneName .. ", currently collapsed: " .. tostring(self.zoneData.isCollapsed))
+                self.zoneData.isCollapsed = not self.zoneData.isCollapsed
+                
+                -- Save state to saved variables
+                if not WoW95DB then WoW95DB = {} end
+                if not WoW95DB.questLogZoneStates then WoW95DB.questLogZoneStates = {} end
+                WoW95DB.questLogZoneStates[self.zoneName] = self.zoneData.isCollapsed
+                
+                -- Update icon immediately
+                self.expandIcon:SetText(self.zoneData.isCollapsed and "[+]" or "[-]")
+                
+                -- Refresh quest log
+                Windows:PopulateQuestLogProper(scrollChild)
+            end)
+            
+            -- Hover effect
+            zoneFrame:SetScript("OnEnter", function(self)
+                self:SetBackdropColor(0.9, 0.9, 0.9, 1)
+            end)
+            zoneFrame:SetScript("OnLeave", function(self)
+                self:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+            end)
+            
+            yPos = yPos - 22
+            
+            -- Add quests if not collapsed
+            if not zoneData.isCollapsed then
+                for _, quest in ipairs(zoneData.quests) do
+                    -- Create quest entry
+                    local questFrame = CreateFrame("Button", nil, scrollChild)
+                    questFrame:SetSize(scrollChild:GetWidth() - 30, 18)
+                    questFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 20, yPos)
+                    
+                    -- Quest text with level
+                    local questText = questFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                    questText:SetPoint("LEFT", questFrame, "LEFT", 5, 0)
+                    questText:SetPoint("RIGHT", questFrame, "RIGHT", -5, 0)
+                    
+                    -- Color based on difficulty
+                    local levelDiff = quest.level - UnitLevel("player")
+                    local color = {1, 1, 0} -- Default yellow
+                    if quest.isComplete then
+                        color = {0, 1, 0} -- Green
+                    elseif levelDiff > 4 then
+                        color = {1, 0, 0} -- Red
+                    elseif levelDiff > 2 then
+                        color = {1, 0.5, 0} -- Orange
+                    elseif levelDiff < -4 then
+                        color = {0.5, 0.5, 0.5} -- Gray
+                    end
+                    
+                    questText:SetText("[" .. quest.level .. "] " .. quest.title)
+                    questText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+                    questText:SetTextColor(color[1], color[2], color[3], 1)
+                    questText:SetJustifyH("LEFT")
+                    
+                    -- Click and right-click handlers
+                    questFrame:EnableMouse(true)
+                    questFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+                    
+                    questFrame:SetScript("OnClick", function(self, button)
+                        WoW95:Debug("Quest frame clicked: " .. quest.title .. " with button: " .. button)
+                        if button == "LeftButton" then
+                            -- Left click - show vanilla-style quest details window
+                            Windows:ShowQuestDetails(quest.questID, self)
+                        elseif button == "RightButton" then
+                            -- Right click - show context menu
+                            Windows:ShowQuestContextMenu(quest, self)
+                        end
+                    end)
+                    
+                    -- Hover effect
+                    questFrame:SetScript("OnEnter", function()
+                        local bg = questFrame:CreateTexture(nil, "BACKGROUND")
+                        bg:SetAllPoints()
+                        bg:SetColorTexture(0.8, 0.8, 0.9, 0.3)
+                        questFrame.hoverBG = bg
+                    end)
+                    
+                    questFrame:SetScript("OnLeave", function()
+                        if questFrame.hoverBG then
+                            questFrame.hoverBG:Hide()
+                            questFrame.hoverBG = nil
+                        end
+                    end)
+                    
+                    yPos = yPos - 18
+                end
+            end
+        end
+    end
+    
+    -- Store final collapse state to saved variables
+    if not WoW95DB then WoW95DB = {} end
+    if not WoW95DB.questLogZoneStates then WoW95DB.questLogZoneStates = {} end
+    for _, zoneName in ipairs(zoneOrder) do
+        if questsByZone[zoneName] then
+            WoW95DB.questLogZoneStates[zoneName] = questsByZone[zoneName].isCollapsed
+        end
+    end
+    
+    -- Adjust scroll height
+    scrollChild:SetHeight(math.max(1, -yPos + 10))
+    
+    WoW95:Debug("Quest log populated successfully with " .. totalQuestCount .. " quests")
+end
+
+function Windows:PopulateQuestLogOLD(scrollChild)
+    WoW95:Debug("Populating quest log with zone headers and quests...")
+    
+    -- Clear existing quest entries
+    local children = {scrollChild:GetChildren()}
+    for _, child in pairs(children) do
+        child:Hide()
+        child:SetParent(nil)
+    end
+    
+    local yPos = -5
+    local questCount = 0
+    local totalQuestCount = 0
+    
+    -- Build quest data structure by zone
+    local zoneData = {}
+    local currentZone = nil
+    
+    -- Get all quests using modern WoW API
+    local numEntries = C_QuestLog.GetNumQuestLogEntries()
+    
+    for questLogIndex = 1, numEntries do
+        local info = C_QuestLog.GetInfo(questLogIndex)
+        
+        if info then
+            if info.isHeader then
+                -- This is a zone/region header
+                local zoneName = info.title or "Unknown Zone"
+                
+                -- We'll show the header and let quests display under it
+                -- Don't filter by questCount as it may not be accurate
+                    -- Create collapsible zone header
+                    local zoneFrame = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
+                    zoneFrame:SetSize(scrollChild:GetWidth() - 10, 20)
+                    zoneFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, yPos)
+                    
+                    -- Zone header background with Windows 95 style
+                    zoneFrame:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8X8",
+                    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                    tile = true,
+                    tileSize = 8,
+                    edgeSize = 1,
+                    insets = {left = 1, right = 1, top = 1, bottom = 1}
+                })
+                zoneFrame:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+                zoneFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                
+                -- Expand/Collapse icon
+                local expandIcon = zoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                expandIcon:SetPoint("LEFT", zoneFrame, "LEFT", 5, 0)
+                expandIcon:SetText(info.isCollapsed and "[+]" or "[-]")
+                expandIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                expandIcon:SetTextColor(0, 0, 0, 1)
+                
+                -- Zone name text (we'll count quests as we add them)
+                local zoneText = zoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                zoneText:SetPoint("LEFT", expandIcon, "RIGHT", 5, 0)
+                zoneText:SetText(zoneName)
+                zoneText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                zoneText:SetTextColor(0.6, 0.6, 0, 1)
+                
+                -- Store zone text for updating with quest count
+                zoneFrame.zoneText = zoneText
+                zoneFrame.zoneName = zoneName
+                zoneFrame.questCount = 0
+                
+                    -- Store references
+                    zoneFrame.expandIcon = expandIcon
+                    zoneFrame.isCollapsed = info.isCollapsed
+                    zoneFrame.questLogIndex = questLogIndex
+                    
+                    -- Click handler for expand/collapse
+                    zoneFrame:SetScript("OnClick", function(self)
+                    -- Toggle collapse state
+                    self.isCollapsed = not self.isCollapsed
+                    self.expandIcon:SetText(self.isCollapsed and "[+]" or "[-]")
+                    
+                    -- Use modern API to expand/collapse
+                    if C_QuestLog.SetHeaderAutoCollapsed then
+                        C_QuestLog.SetHeaderAutoCollapsed(self.questLogIndex, self.isCollapsed)
+                    end
+                    
+                    -- Refresh the quest log
+                    Windows:PopulateQuestLog(scrollChild)
+                end)
+                
+                    -- Hover effect
+                    zoneFrame:SetScript("OnEnter", function(self)
+                        self:SetBackdropColor(0.9, 0.9, 0.9, 1)
+                    end)
+                    zoneFrame:SetScript("OnLeave", function(self)
+                        self:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+                    end)
+                
+                currentZoneFrame = zoneFrame
+                zoneQuestYPos = -20
+                yPos = yPos - 22
+                
+            elseif not info.isHidden then
+                -- This is a quest entry
+                local questID = info.questID
+                local questTitle = info.title
+                local isComplete = C_QuestLog.IsComplete(questID)
+                local questLevel = info.level or C_QuestLog.GetQuestDifficultyLevel(questID) or 1
+                
+                if questTitle and questID and currentZoneFrame and not currentZoneFrame.isCollapsed then
+                    -- Create quest entry frame indented under zone
+                    local questFrame = CreateFrame("Button", nil, scrollChild)
+                    questFrame:SetSize(scrollChild:GetWidth() - 30, 18)
+                    questFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 20, yPos)
+                    
+                    -- Quest text with level
+                    local questText = questFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                    questText:SetPoint("LEFT", questFrame, "LEFT", 5, 0)
+                    questText:SetPoint("RIGHT", questFrame, "RIGHT", -5, 0)
+                    
+                    -- Format quest text with level and color coding
+                    local levelDiff = questLevel - UnitLevel("player")
+                    local levelColor = ""
+                    if isComplete then
+                        levelColor = "|cff00ff00" -- Green for complete
+                    elseif levelDiff > 4 then
+                        levelColor = "|cffff0000" -- Red for very hard
+                    elseif levelDiff > 2 then
+                        levelColor = "|cffff8000" -- Orange for hard
+                    elseif levelDiff >= -2 then
+                        levelColor = "|cffffff00" -- Yellow for normal
+                    elseif levelDiff >= -4 then
+                        levelColor = "|cff00ff00" -- Green for easy
+                    else
+                        levelColor = "|cff808080" -- Gray for trivial
+                    end
+                    
+                    questText:SetText(levelColor .. "[" .. questLevel .. "] " .. questTitle .. "|r")
+                    questText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+                    questText:SetJustifyH("LEFT")
+                    
+                    -- Make quest clickable to show objectives
+                    questFrame:EnableMouse(true)
+                    questFrame:SetScript("OnMouseDown", function()
+                        self:ShowQuestDetails(questID, questFrame)
+                    end)
+                    
+                    -- Hover effect
+                    questFrame:SetScript("OnEnter", function()
+                        local bg = questFrame:CreateTexture(nil, "BACKGROUND")
+                        bg:SetAllPoints()
+                        bg:SetColorTexture(0.8, 0.8, 0.9, 0.3)
+                        questFrame.hoverBG = bg
+                    end)
+                    
+                    questFrame:SetScript("OnLeave", function()
+                        if questFrame.hoverBG then
+                            questFrame.hoverBG:Hide()
+                            questFrame.hoverBG = nil
+                        end
+                    end)
+                    
+                    yPos = yPos - 18
+                    questCount = questCount + 1
+                    
+                    -- Update zone quest count
+                    if currentZoneFrame then
+                        currentZoneFrame.questCount = (currentZoneFrame.questCount or 0) + 1
+                        currentZoneFrame.zoneText:SetText(currentZoneFrame.zoneName .. " (" .. currentZoneFrame.questCount .. ")")
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Hide zones with no quests
+    local allZoneFrames = {}
+    for _, child in pairs({scrollChild:GetChildren()}) do
+        if child.questCount then  -- This is a zone frame
+            if child.questCount == 0 then
+                child:Hide()
+            else
+                table.insert(allZoneFrames, child)
+            end
+        end
+    end
+    
+    -- Reposition visible zones
+    local newYPos = -5
+    for _, zoneFrame in ipairs(allZoneFrames) do
+        if zoneFrame:IsShown() then
+            zoneFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, newYPos)
+            newYPos = newYPos - 22
+            
+            -- Reposition quests under this zone if not collapsed
+            if not zoneFrame.isCollapsed then
+                for _, child in pairs({scrollChild:GetChildren()}) do
+                    -- Check if this is a quest under this zone (you'd need to mark them)
+                    -- For now, quests maintain their positions
+                end
+            end
+        end
+    end
+    
+    -- Adjust scroll child height based on content
+    scrollChild:SetHeight(math.max(1, -yPos + 10))
+    
+    WoW95:Debug("Quest log populated with " .. questCount .. " quests in zones")
+end
+
+function Windows:ShowQuestDetails(questID, questFrame)
+    WoW95:Debug("Showing details for quest ID: " .. questID)
+    
+    -- Create vanilla-style quest details window
+    self:CreateQuestDetailsWindow(questID, questFrame)
+end
+
+function Windows:CreateQuestDetailsWindow(questID, questFrame)
+    -- Hide existing quest details window if open
+    if self.questDetailsWindow then
+        self.questDetailsWindow:Hide()
+        self.questDetailsWindow = nil
+    end
+    
+    -- Get quest info
+    local title = C_QuestLog.GetTitleForQuestID(questID) or "Unknown Quest"
+    local questIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+    local description = ""
+    local objectives = ""
+    local rewards = ""
+    
+    if questIndex then
+        -- Set selected quest to get details
+        SelectQuestLogEntry(questIndex)
+        description = GetQuestLogQuestText() or ""
+        
+        -- Get objectives
+        local numObjectives = GetNumQuestLeaderBoards(questIndex)
+        if numObjectives and numObjectives > 0 then
+            for i = 1, numObjectives do
+                local text, type, finished = GetQuestLogLeaderBoard(i, questIndex)
+                if text then
+                    if finished then
+                        objectives = objectives .. "|cff00ff00" .. text .. "|r\n"
+                    else
+                        objectives = objectives .. text .. "\n"
+                    end
+                end
+            end
+        end
+        
+        -- Get rewards
+        local numRewards = GetNumQuestLogRewards(questIndex)
+        local numChoices = GetNumQuestLogChoices(questIndex)
+        
+        if numRewards > 0 or numChoices > 0 then
+            rewards = "Rewards:\n"
+            
+            -- Fixed rewards
+            for i = 1, numRewards do
+                local name, texture, numItems, quality = GetQuestLogRewardInfo(i, questIndex)
+                if name then
+                    local color = ITEM_QUALITY_COLORS[quality] or {r=1, g=1, b=1}
+                    rewards = rewards .. string.format("|cff%02x%02x%02x%s|r", 
+                        color.r * 255, color.g * 255, color.b * 255, name)
+                    if numItems > 1 then
+                        rewards = rewards .. " (" .. numItems .. ")"
+                    end
+                    rewards = rewards .. "\n"
+                end
+            end
+            
+            -- Choice rewards
+            if numChoices > 0 then
+                rewards = rewards .. "\nChoose one:\n"
+                for i = 1, numChoices do
+                    local name, texture, numItems, quality = GetQuestLogChoiceInfo(i, questIndex)
+                    if name then
+                        local color = ITEM_QUALITY_COLORS[quality] or {r=1, g=1, b=1}
+                        rewards = rewards .. string.format("|cff%02x%02x%02x%s|r", 
+                            color.r * 255, color.g * 255, color.b * 255, name)
+                        if numItems > 1 then
+                            rewards = rewards .. " (" .. numItems .. ")"
+                        end
+                        rewards = rewards .. "\n"
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Create quest details window
+    local detailsWindow = WoW95:CreateWindow(
+        "WoW95QuestDetails", 
+        UIParent, 
+        400, 
+        500, 
+        title
+    )
+    
+    -- Position near the quest log or mouse
+    detailsWindow:SetPoint("CENTER", UIParent, "CENTER", 200, 0)
+    
+    -- Create content area
+    local contentArea = CreateFrame("Frame", nil, detailsWindow, "BackdropTemplate")
+    contentArea:SetPoint("TOPLEFT", detailsWindow, "TOPLEFT", 8, -30)
+    contentArea:SetPoint("BOTTOMRIGHT", detailsWindow, "BOTTOMRIGHT", -8, 8)
+    contentArea:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    contentArea:SetBackdropColor(1, 1, 1, 1)
+    contentArea:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create scrollable content
+    local scrollFrame = CreateFrame("ScrollFrame", nil, contentArea, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 5, -5)
+    scrollFrame:SetPoint("BOTTOMRIGHT", contentArea, "BOTTOMRIGHT", -25, 5)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(scrollFrame:GetWidth(), 1)
+    scrollFrame:SetScrollChild(scrollChild)
+    
+    local yPos = -10
+    
+    -- Quest description
+    if description ~= "" then
+        local descText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        descText:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yPos)
+        descText:SetPoint("RIGHT", scrollChild, "RIGHT", -10, 0)
+        descText:SetJustifyH("LEFT")
+        descText:SetJustifyV("TOP")
+        descText:SetText(description)
+        descText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+        descText:SetTextColor(0, 0, 0, 1)
+        
+        yPos = yPos - (descText:GetStringHeight() + 15)
+    end
+    
+    -- Objectives
+    if objectives ~= "" then
+        local objHeader = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        objHeader:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yPos)
+        objHeader:SetText("Objectives:")
+        objHeader:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+        objHeader:SetTextColor(0, 0, 0.8, 1)
+        yPos = yPos - 20
+        
+        local objText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        objText:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yPos)
+        objText:SetPoint("RIGHT", scrollChild, "RIGHT", -10, 0)
+        objText:SetJustifyH("LEFT")
+        objText:SetJustifyV("TOP")
+        objText:SetText(objectives)
+        objText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        
+        yPos = yPos - (objText:GetStringHeight() + 15)
+    end
+    
+    -- Rewards
+    if rewards ~= "" then
+        local rewardHeader = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        rewardHeader:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yPos)
+        rewardHeader:SetText("Rewards:")
+        rewardHeader:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+        rewardHeader:SetTextColor(0, 0, 0.8, 1)
+        yPos = yPos - 20
+        
+        local rewardText = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        rewardText:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, yPos)
+        rewardText:SetPoint("RIGHT", scrollChild, "RIGHT", -10, 0)
+        rewardText:SetJustifyH("LEFT")
+        rewardText:SetJustifyV("TOP")
+        rewardText:SetText(rewards)
+        rewardText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        
+        yPos = yPos - (rewardText:GetStringHeight() + 15)
+    end
+    
+    -- Set scroll child height
+    scrollChild:SetHeight(math.max(1, -yPos + 20))
+    
+    -- Store window reference
+    self.questDetailsWindow = detailsWindow
+    
+    -- Auto-close after 10 seconds or when clicking elsewhere
+    C_Timer.After(10, function()
+        if self.questDetailsWindow == detailsWindow then
+            detailsWindow:Hide()
+            self.questDetailsWindow = nil
+        end
+    end)
+    
+    detailsWindow:Show()
+end
+
+function Windows:ShowQuestContextMenu(quest, questFrame)
+    WoW95:Debug("Showing context menu for quest: " .. quest.title)
+    
+    -- Hide any existing menu
+    if self.activeContextMenu then
+        self.activeContextMenu:Hide()
+    end
+    
+    -- Create context menu
+    local menu = CreateFrame("Frame", "WoW95QuestContextMenu", UIParent, "BackdropTemplate")
+    menu:SetSize(120, 80)
+    
+    -- Position at mouse cursor
+    local scale = UIParent:GetEffectiveScale()
+    local x, y = GetCursorPosition()
+    menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+    menu:SetFrameStrata("TOOLTIP")
+    menu:SetFrameLevel(1000)
+    menu:EnableMouse(true)
+    
+    -- Menu background
+    menu:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    menu:SetBackdropColor(unpack(WoW95.colors.window))
+    menu:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    local yPos = -5
+    
+    -- Track Quest button
+    local isTracked = C_QuestLog.GetQuestWatchType(quest.questID) ~= nil
+    local trackBtn = WoW95:CreateButton("TrackQuest", menu, 110, 18, isTracked and "Untrack Quest" or "Track Quest")
+    trackBtn:SetPoint("TOPLEFT", menu, "TOPLEFT", 5, yPos)
+    trackBtn:SetScript("OnClick", function()
+        if isTracked then
+            C_QuestLog.RemoveQuestWatch(quest.questID)
+        else
+            C_QuestLog.AddQuestWatch(quest.questID)
+        end
+        menu:Hide()
+        -- Refresh quest log
+        if questFrame:GetParent() then
+            Windows:PopulateQuestLogProper(questFrame:GetParent())
+        end
+    end)
+    yPos = yPos - 20
+    
+    -- Share Quest button
+    local shareBtn = WoW95:CreateButton("ShareQuest", menu, 110, 18, "Share Quest")
+    shareBtn:SetPoint("TOPLEFT", menu, "TOPLEFT", 5, yPos)
+    shareBtn:SetScript("OnClick", function()
+        local questIndex = C_QuestLog.GetLogIndexForQuestID(quest.questID)
+        if questIndex and GetQuestLogPushable(questIndex) then
+            QuestLogPushQuest(questIndex)
+        end
+        menu:Hide()
+    end)
+    yPos = yPos - 20
+    
+    -- Abandon Quest button
+    local abandonBtn = WoW95:CreateButton("AbandonQuest", menu, 110, 18, "Abandon Quest")
+    abandonBtn:SetPoint("TOPLEFT", menu, "TOPLEFT", 5, yPos)
+    abandonBtn:SetScript("OnClick", function()
+        -- Show confirmation dialog
+        StaticPopup_Show("ABANDON_QUEST", quest.title)
+        menu:Hide()
+    end)
+    
+    -- Store reference and show
+    self.activeContextMenu = menu
+    menu:Show()
+    
+    -- Auto-hide when clicking elsewhere - use a timer instead of OnUpdate
+    local hideTimer
+    local function CheckHide()
+        if menu and menu:IsShown() and not menu:IsMouseOver() then
+            menu:Hide()
+            self.activeContextMenu = nil
+            if hideTimer then
+                hideTimer:Cancel()
+            end
+        end
+    end
+    
+    -- Start checking after a short delay
+    C_Timer.After(0.5, function()
+        if menu and menu:IsShown() then
+            hideTimer = C_Timer.NewTicker(0.1, CheckHide)
+        end
+    end)
+end
+
+function Windows:CreateWindows95TitleBar(frame, title)
+    if frame.wow95TitleBar then return end -- Already created
+    
+    local titleBar = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    titleBar:SetHeight(25)
+    titleBar:SetFrameLevel(frame:GetFrameLevel() + 10)
+    
+    -- Title bar background
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    titleBar:SetBackdropColor(unpack(WoW95.colors.titleBar))
+    titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    -- Title text
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+    titleText:SetText(title or "World Map")
+    titleText:SetTextColor(unpack(WoW95.colors.titleBarText))
+    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    titleText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Close button
+    local closeBtn = WoW95:CreateTitleBarButton("WoW95MapClose", titleBar, WoW95.textures.close, 16)
+    closeBtn:SetPoint("RIGHT", titleBar, "RIGHT", -4, 0)
+    closeBtn:SetScript("OnClick", function()
+        frame:Hide()
+    end)
+    
+    frame.wow95TitleBar = titleBar
+    frame.wow95TitleText = titleText
+    frame.wow95CloseBtn = closeBtn
+end
+
+function Windows:StyleZoneNavigation()
+    WoW95:Debug("Styling zone navigation breadcrumbs...")
+    
+    -- Look for the navigation bar that contains zone buttons
+    if WorldMapFrame.NavBar then
+        WoW95:Debug("Found NavBar, styling zone navigation buttons...")
+        self:StyleZoneNavigationBar(WorldMapFrame.NavBar)
+    end
+    
+    -- Also search for common breadcrumb button patterns
+    self:StyleZoneBreadcrumbs(WorldMapFrame)
+end
+
+function Windows:StyleZoneNavigationBar(navBar)
+    if not navBar then return end
+    
+    WoW95:Debug("Styling navigation bar: " .. (navBar:GetName() or "unnamed"))
+    
+    -- Style the navbar background first
+    self:ApplyWindows95PanelStyle(navBar)
+    
+    -- Find and style all buttons in the navbar
+    local children = {navBar:GetChildren()}
+    for _, child in pairs(children) do
+        if child and child:IsObjectType("Button") then
+            local buttonName = child:GetName() or "unnamed"
+            WoW95:Debug("Found zone nav button: " .. buttonName)
+            self:ApplyWindows95ButtonStyle(child)
+            
+            -- Special styling for zone navigation buttons
+            self:StyleZoneButton(child)
+        end
+    end
+end
+
+function Windows:StyleZoneBreadcrumbs(parentFrame)
+    WoW95:Debug("Searching for zone breadcrumb buttons...")
+    
+    -- Recursively search for buttons that look like zone navigation
+    local function findZoneButtons(frame, depth)
+        if not frame or depth > 8 then return end
+        
+        local children = {frame:GetChildren()}
+        for _, child in pairs(children) do
+            if child and child:IsObjectType("Button") then
+                local buttonName = child:GetName() or "unnamed"
+                local buttonText = ""
+                
+                -- Get button text to identify zone buttons
+                local fontString = child:GetFontString()
+                if fontString then
+                    buttonText = fontString:GetText() or ""
+                end
+                
+                -- Check if this looks like a zone navigation button
+                if self:IsZoneNavigationButton(buttonText, buttonName) then
+                    WoW95:Debug("Found zone button: " .. buttonName .. " ('" .. buttonText .. "')")
+                    self:ApplyWindows95ButtonStyle(child)
+                    self:StyleZoneButton(child)
+                end
+            elseif child and child:IsObjectType("Frame") then
+                -- Recursively search child frames
+                findZoneButtons(child, depth + 1)
+            end
+        end
+    end
+    
+    findZoneButtons(parentFrame, 0)
+end
+
+function Windows:IsZoneNavigationButton(buttonText, buttonName)
+    -- Check if this is likely a zone navigation button based on text or name
+    local zoneKeywords = {
+        "world", "azeroth", "khaz algar", "isle of dorne", "dornogal",
+        "eastern kingdoms", "kalimdor", "outland", "northrend", "pandaria",
+        "draenor", "broken isles", "zandalar", "kul tiras", "shadowlands",
+        "dragon isles"
+    }
+    
+    local textLower = buttonText:lower()
+    local nameLower = buttonName:lower()
+    
+    -- Check for zone keywords in text or name
+    for _, keyword in pairs(zoneKeywords) do
+        if string.find(textLower, keyword) or string.find(nameLower, keyword) then
+            return true
+        end
+    end
+    
+    -- Check for common navigation button name patterns
+    if string.find(nameLower, "nav") or string.find(nameLower, "breadcrumb") or string.find(nameLower, "zone") then
+        return true
+    end
+    
+    return false
+end
+
+function Windows:StyleZoneButton(button)
+    if not button or button.wow95ZoneStyled then return end
+    
+    WoW95:Debug("Applying zone-specific styling to: " .. (button:GetName() or "unnamed"))
+    
+    -- Zone buttons get special styling - they should look like Windows 95 toolbar buttons
+    if button.SetBackdrop then
+        button:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 1, right = 1, top = 1, bottom = 1}
+        })
+        button:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+        button:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+        
+        -- Enhanced hover effects for zone buttons
+        button:HookScript("OnEnter", function(self)
+            self:SetBackdropColor(0.9, 0.9, 0.9, 1)
+            self:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        end)
+        button:HookScript("OnLeave", function(self)  
+            self:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+            self:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+        end)
+        
+        -- Pressed effect
+        button:HookScript("OnMouseDown", function(self)
+            self:SetBackdropColor(0.6, 0.6, 0.6, 1)
+        end)
+        button:HookScript("OnMouseUp", function(self)
+            self:SetBackdropColor(0.9, 0.9, 0.9, 1)
+        end)
+    end
+    
+    button.wow95ZoneStyled = true
+end
+
+function Windows:CreateSelectiveMapBackground()
+    WoW95:Debug("Creating selective Windows 95 background (preserving map area)...")
+    
+    -- Only create background strips around the edges, not over the map
+    if not WorldMapFrame.wow95BorderBg then
+        -- Create border backgrounds that don't cover the map content
+        
+        -- Top border (above the map, below title bar)
+        local topBorder = WorldMapFrame:CreateTexture(nil, "BACKGROUND")
+        topBorder:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 0, -25) -- Below title bar
+        topBorder:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", 0, -25)
+        topBorder:SetHeight(5) -- Small top border
+        topBorder:SetColorTexture(unpack(WoW95.colors.window))
+        topBorder:SetDrawLayer("BACKGROUND", -5)
+        
+        -- Bottom border
+        local bottomBorder = WorldMapFrame:CreateTexture(nil, "BACKGROUND")
+        bottomBorder:SetPoint("BOTTOMLEFT", WorldMapFrame, "BOTTOMLEFT", 0, 0)
+        bottomBorder:SetPoint("BOTTOMRIGHT", WorldMapFrame, "BOTTOMRIGHT", 0, 0)
+        bottomBorder:SetHeight(5) -- Small bottom border
+        bottomBorder:SetColorTexture(unpack(WoW95.colors.window))
+        bottomBorder:SetDrawLayer("BACKGROUND", -5)
+        
+        -- Left border
+        local leftBorder = WorldMapFrame:CreateTexture(nil, "BACKGROUND")
+        leftBorder:SetPoint("TOPLEFT", WorldMapFrame, "TOPLEFT", 0, -25)
+        leftBorder:SetPoint("BOTTOMLEFT", WorldMapFrame, "BOTTOMLEFT", 0, 0)
+        leftBorder:SetWidth(5) -- Small left border
+        leftBorder:SetColorTexture(unpack(WoW95.colors.window))
+        leftBorder:SetDrawLayer("BACKGROUND", -5)
+        
+        -- Right border
+        local rightBorder = WorldMapFrame:CreateTexture(nil, "BACKGROUND")
+        rightBorder:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", 0, -25)
+        rightBorder:SetPoint("BOTTOMRIGHT", WorldMapFrame, "BOTTOMRIGHT", 0, 0)
+        rightBorder:SetWidth(5) -- Small right border
+        rightBorder:SetColorTexture(unpack(WoW95.colors.window))
+        rightBorder:SetDrawLayer("BACKGROUND", -5)
+        
+        WorldMapFrame.wow95BorderBg = {
+            top = topBorder,
+            bottom = bottomBorder,
+            left = leftBorder,
+            right = rightBorder
+        }
+        
+        WoW95:Debug("Created selective border backgrounds")
+    end
+    
+    -- Make sure the map canvas area stays completely clear
+    if WorldMapFrame.ScrollContainer then
+        -- Ensure the scroll container doesn't get any background styling
+        WorldMapFrame.ScrollContainer.wow95styled = true
+        
+        -- Make sure it's at a proper frame level
+        WorldMapFrame.ScrollContainer:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 10)
+        
+        WoW95:Debug("Protected map canvas from background styling")
+    end
+end
+
+function Windows:StyleMapPanels()
+    WoW95:Debug("Styling map panels...")
+    
+    -- Style the main map canvas area
+    if WorldMapFrame.ScrollContainer then
+        self:ApplyWindows95PanelStyle(WorldMapFrame.ScrollContainer)
+    end
+    
+    -- Style side panels if they exist
+    if WorldMapFrame.SidePanelToggle then
+        self:ApplyWindows95ButtonStyle(WorldMapFrame.SidePanelToggle.OpenButton)
+        self:ApplyWindows95ButtonStyle(WorldMapFrame.SidePanelToggle.CloseButton)
+    end
+    
+    -- Style navigation elements
+    if WorldMapFrame.NavBar then
+        self:ApplyWindows95PanelStyle(WorldMapFrame.NavBar)
+    end
+    
+    -- Style quest log panel (the right side panel)
+    if WorldMapFrame.questLogFrame then
+        self:ApplyWindows95PanelStyle(WorldMapFrame.questLogFrame)
+    end
+    
+    -- Style the overlay frame that contains pins and overlays
+    if WorldMapFrame.overlayFrames then
+        for _, overlayFrame in pairs(WorldMapFrame.overlayFrames) do
+            if overlayFrame.SetBackdrop then
+                self:ApplyWindows95PanelStyle(overlayFrame)
+            end
+        end
+    end
+    
+    -- Find and style all child frames that look like panels
+    self:StyleAllMapChildFrames(WorldMapFrame)
+end
+
+function Windows:StyleMapControls()
+    WoW95:Debug("Styling map controls...")
+    
+    -- Style zoom buttons
+    if WorldMapFrame.BorderFrame then
+        if WorldMapFrame.BorderFrame.MaximizeMinimizeFrame then
+            self:ApplyWindows95ButtonStyle(WorldMapFrame.BorderFrame.MaximizeMinimizeFrame.MaximizeButton)
+            self:ApplyWindows95ButtonStyle(WorldMapFrame.BorderFrame.MaximizeMinimizeFrame.MinimizeButton)
+        end
+        
+        if WorldMapFrame.BorderFrame.CloseButton then
+            -- Hide default close button since we have our own
+            WorldMapFrame.BorderFrame.CloseButton:Hide()
+        end
+    end
+    
+    -- Find and style all buttons in the map frame
+    self:StyleAllMapButtons(WorldMapFrame)
+    
+    -- Style dropdown menus and filter buttons
+    self:StyleMapDropdowns()
+    
+    -- Style any edit boxes or search elements
+    self:StyleMapEditBoxes()
+end
+
+function Windows:ApplyWindows95PanelStyle(panel)
+    if not panel or panel.wow95styled then return end
+    
+    WoW95:Debug("Styling panel: " .. (panel:GetName() or "unnamed"))
+    
+    -- Hide original background textures
+    for i = 1, panel:GetNumRegions() do
+        local region = select(i, panel:GetRegions())
+        if region and region:GetObjectType() == "Texture" then
+            -- Only hide background-looking textures, not icons
+            local texture = region:GetTexture()
+            if texture then
+                local textureName = tostring(texture):lower()
+                if string.find(textureName, "background") or
+                   string.find(textureName, "border") or
+                   string.find(textureName, "panel") or
+                   string.find(textureName, "frame") then
+                    region:Hide()
+                end
+            end
+        elseif region and region:GetObjectType() == "FontString" then
+            -- Style text to remove shadows
+            region:SetShadowColor(0, 0, 0, 0)
+            region:SetTextColor(0, 0, 0, 1) -- Black text for panels
+        end
+    end
+    
+    -- Create Windows 95 background
+    if not panel.wow95bg then
+        local bg = panel:CreateTexture(nil, "BACKGROUND") 
+        bg:SetAllPoints()
+        bg:SetColorTexture(unpack(WoW95.colors.buttonFace))
+        bg:SetDrawLayer("BACKGROUND", -1)
+        panel.wow95bg = bg
+    end
+    
+    -- Add Windows 95 border if the panel supports backdrop
+    if panel.SetBackdrop then
+        panel:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 1, right = 1, top = 1, bottom = 1}
+        })
+        panel:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+        panel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    end
+    
+    panel.wow95styled = true
+end
+
+function Windows:ApplyWindows95ButtonStyle(button)
+    if not button or button.wow95styled then return end
+    
+    WoW95:Debug("Styling button: " .. (button:GetName() or "unnamed"))
+    
+    -- Clear original textures
+    button:SetNormalTexture("")
+    button:SetPushedTexture("")
+    button:SetHighlightTexture("")
+    
+    -- Style button text if it exists
+    local buttonText = button:GetFontString()
+    if buttonText then
+        buttonText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        buttonText:SetTextColor(unpack(WoW95.colors.buttonText))
+        buttonText:SetShadowColor(0, 0, 0, 0)
+    end
+    
+    -- Style any other font strings in the button
+    for i = 1, button:GetNumRegions() do
+        local region = select(i, button:GetRegions())
+        if region and region:GetObjectType() == "FontString" then
+            region:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+            region:SetTextColor(unpack(WoW95.colors.buttonText))
+            region:SetShadowColor(0, 0, 0, 0)
+        end
+    end
+    
+    -- Create Windows 95 button visuals using textures (works for all buttons)
+    self:CreateWindows95ButtonVisuals(button)
+    
+    button.wow95styled = true
+end
+
+function Windows:CreateWindows95ButtonVisuals(button)
+    if button.wow95visuals then return end -- Already created
+    
+    WoW95:Debug("Creating Windows 95 visuals for button: " .. (button:GetName() or "unnamed"))
+    
+    -- Create background texture
+    local bg = button:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(unpack(WoW95.colors.buttonFace))
+    bg:SetDrawLayer("BACKGROUND", 0)
+    
+    -- Create border textures for 3D effect
+    local topBorder = button:CreateTexture(nil, "BORDER")
+    topBorder:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    topBorder:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
+    topBorder:SetHeight(1)
+    topBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+    
+    local leftBorder = button:CreateTexture(nil, "BORDER")
+    leftBorder:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    leftBorder:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+    leftBorder:SetWidth(1)
+    leftBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+    
+    local bottomBorder = button:CreateTexture(nil, "BORDER")
+    bottomBorder:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+    bottomBorder:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+    bottomBorder:SetHeight(1)
+    bottomBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+    
+    local rightBorder = button:CreateTexture(nil, "BORDER")
+    rightBorder:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
+    rightBorder:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+    rightBorder:SetWidth(1)
+    rightBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+    
+    -- Store references
+    button.wow95visuals = {
+        bg = bg,
+        topBorder = topBorder,
+        leftBorder = leftBorder,
+        bottomBorder = bottomBorder,
+        rightBorder = rightBorder
+    }
+    
+    -- Add interactive effects
+    button:HookScript("OnEnter", function(self)
+        if self.wow95visuals then
+            self.wow95visuals.bg:SetColorTexture(0.85, 0.85, 0.85, 1)
+        end
+    end)
+    
+    button:HookScript("OnLeave", function(self)
+        if self.wow95visuals then
+            self.wow95visuals.bg:SetColorTexture(unpack(WoW95.colors.buttonFace))
+        end
+    end)
+    
+    button:HookScript("OnMouseDown", function(self)
+        if self.wow95visuals then
+            self.wow95visuals.bg:SetColorTexture(0.6, 0.6, 0.6, 1)
+            -- Swap border colors for pressed effect
+            self.wow95visuals.topBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+            self.wow95visuals.leftBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+            self.wow95visuals.bottomBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+            self.wow95visuals.rightBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+        end
+    end)
+    
+    button:HookScript("OnMouseUp", function(self)
+        if self.wow95visuals then
+            self.wow95visuals.bg:SetColorTexture(0.85, 0.85, 0.85, 1)
+            -- Restore normal border colors
+            self.wow95visuals.topBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+            self.wow95visuals.leftBorder:SetColorTexture(unpack(WoW95.colors.buttonHighlight))
+            self.wow95visuals.bottomBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+            self.wow95visuals.rightBorder:SetColorTexture(unpack(WoW95.colors.buttonShadow))
+        end
+    end)
+    
+    WoW95:Debug("Created Windows 95 button visuals")
+end
+
+-- Helper function to recursively style all child frames
+function Windows:StyleAllMapChildFrames(parentFrame, depth)
+    depth = depth or 0
+    if depth > 10 then return end -- Prevent infinite recursion
+    
+    local children = {parentFrame:GetChildren()}
+    for _, child in pairs(children) do
+        if child and child:IsObjectType("Frame") then
+            local frameName = child:GetName() or "unnamed"
+            
+            -- Style frames that look like panels or containers
+            if child.SetBackdrop and not child.wow95styled then
+                -- Check if this looks like a panel (has a backdrop or background)
+                local hasBackground = false
+                for i = 1, child:GetNumRegions() do
+                    local region = select(i, child:GetRegions())
+                    if region and region:GetObjectType() == "Texture" then
+                        hasBackground = true
+                        break
+                    end
+                end
+                
+                if hasBackground then
+                    WoW95:Debug("Styling child frame: " .. frameName)
+                    self:ApplyWindows95PanelStyle(child)
+                end
+            end
+            
+            -- Recursively style children
+            self:StyleAllMapChildFrames(child, depth + 1)
+        end
+    end
+end
+
+-- Helper function to find and style all buttons
+function Windows:StyleAllMapButtons(parentFrame, depth)
+    depth = depth or 0
+    if depth > 10 then return end -- Prevent infinite recursion
+    
+    local children = {parentFrame:GetChildren()}
+    for _, child in pairs(children) do
+        if child then
+            if child:IsObjectType("Button") and not child.wow95styled then
+                local buttonName = child:GetName() or "unnamed"
+                WoW95:Debug("Found button to style: " .. buttonName)
+                self:ApplyWindows95ButtonStyle(child)
+            end
+            
+            -- Recursively check children
+            if child:IsObjectType("Frame") then
+                self:StyleAllMapButtons(child, depth + 1)
+            end
+        end
+    end
+end
+
+-- Style dropdown menus and filter controls
+function Windows:StyleMapDropdowns()
+    WoW95:Debug("Styling map dropdowns...")
+    
+    -- Look for common dropdown frame names
+    local dropdownNames = {
+        "WorldMapTrackingOptionsDropDown",
+        "WorldMapShowDropDown", 
+        "WorldMapContinentDropDown",
+        "WorldMapZoneDropDown"
+    }
+    
+    for _, dropdownName in ipairs(dropdownNames) do
+        local dropdown = _G[dropdownName]
+        if dropdown then
+            WoW95:Debug("Styling dropdown: " .. dropdownName)
+            -- Style the dropdown button
+            if dropdown.Button then
+                self:ApplyWindows95ButtonStyle(dropdown.Button)
+            end
+            -- Style the dropdown frame itself
+            if dropdown.SetBackdrop then
+                self:ApplyWindows95PanelStyle(dropdown)
+            end
+        end
+    end
+end
+
+-- Style edit boxes and search elements
+function Windows:StyleMapEditBoxes()
+    WoW95:Debug("Styling map edit boxes...")
+    
+    -- Look for edit boxes in the world map
+    local function styleEditBoxes(frame)
+        if not frame then return end
+        
+        local children = {frame:GetChildren()}
+        for _, child in pairs(children) do
+            if child and child:IsObjectType("EditBox") and not child.wow95styled then
+                local editBoxName = child:GetName() or "unnamed"
+                WoW95:Debug("Styling edit box: " .. editBoxName)
+                self:ApplyWindows95EditBoxStyle(child)
+            elseif child and child:IsObjectType("Frame") then
+                styleEditBoxes(child) -- Recursive search
+            end
+        end
+    end
+    
+    styleEditBoxes(WorldMapFrame)
+end
+
+-- Apply Windows 95 styling to edit boxes
+function Windows:ApplyWindows95EditBoxStyle(editBox)
+    if not editBox or editBox.wow95styled then return end
+    
+    WoW95:Debug("Styling edit box: " .. (editBox:GetName() or "unnamed"))
+    
+    -- Create Windows 95 edit box appearance
+    if editBox.SetBackdrop then
+        editBox:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 2, right = 2, top = 2, bottom = 2}
+        })
+        editBox:SetBackdropColor(1, 1, 1, 1) -- White background
+        editBox:SetBackdropBorderColor(0.4, 0.4, 0.4, 1) -- Dark grey border
+    end
+    
+    -- Style the text
+    editBox:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    editBox:SetTextColor(0, 0, 0, 1) -- Black text
+    editBox:SetShadowColor(0, 0, 0, 0) -- No shadow
+    
+    editBox.wow95styled = true
+end
+
+function Windows:CreateAchievementsSummary(achievementsWindow)
+    -- Create summary section at top - ensure it doesn't overlap categories
+    local summaryFrame = CreateFrame("Frame", "WoW95AchievementsSummary", achievementsWindow, "BackdropTemplate")
+    summaryFrame:SetPoint("TOPLEFT", achievementsWindow, "TOPLEFT", 15, -30)
+    summaryFrame:SetPoint("TOPRIGHT", achievementsWindow, "TOPRIGHT", -15, -30)
+    summaryFrame:SetHeight(60)
+    summaryFrame:SetFrameLevel(achievementsWindow:GetFrameLevel() + 1) -- Lower than buttons
+    
+    -- Summary background
+    summaryFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    summaryFrame:SetBackdropColor(0.95, 0.95, 0.95, 1)
+    summaryFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Achievement points
+    local pointsLabel = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    pointsLabel:SetPoint("TOPLEFT", summaryFrame, "TOPLEFT", 10, -10)
+    pointsLabel:SetText("Achievement Points:")
+    pointsLabel:SetTextColor(0, 0, 0, 1)
+    
+    local totalPoints = GetTotalAchievementPoints()
+    local pointsValue = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    pointsValue:SetPoint("LEFT", pointsLabel, "RIGHT", 10, 0)
+    pointsValue:SetText(totalPoints or 0)
+    pointsValue:SetTextColor(0.2, 0.4, 0.8, 1)
+    
+    -- Recent achievements text
+    local recentLabel = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    recentLabel:SetPoint("TOPLEFT", pointsLabel, "BOTTOMLEFT", 0, -10)
+    recentLabel:SetText("Recent Achievements: Select a category to view achievements")
+    recentLabel:SetTextColor(0.3, 0.3, 0.3, 1)
+    
+    -- Store references
+    achievementsWindow.summaryFrame = summaryFrame
+    achievementsWindow.pointsValue = pointsValue
+end
+
+function Windows:CreateCategoriesPanel(achievementsWindow)
+    -- Create category list panel (left side)
+    local categoryPanel = CreateFrame("Frame", "WoW95AchievementCategories", achievementsWindow, "BackdropTemplate")
+    categoryPanel:SetPoint("TOPLEFT", achievementsWindow.summaryFrame, "BOTTOMLEFT", 0, -10)
+    categoryPanel:SetPoint("BOTTOMLEFT", achievementsWindow, "BOTTOMLEFT", 15, 15)
+    categoryPanel:SetWidth(200)
+    categoryPanel:SetFrameLevel(achievementsWindow:GetFrameLevel() + 1)
+    
+    -- Category panel background
+    categoryPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    categoryPanel:SetBackdropColor(1, 1, 1, 1)
+    categoryPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Category title
+    local categoryTitle = categoryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    categoryTitle:SetPoint("TOP", categoryPanel, "TOP", 0, -8)
+    categoryTitle:SetText("Categories")
+    categoryTitle:SetTextColor(0, 0, 0, 1)
+    categoryTitle:SetShadowColor(0, 0, 0, 0)
+    
+    -- Create simple scrollable category list without template
+    local categoryScroll = CreateFrame("ScrollFrame", "WoW95AchievementCategoryScroll", categoryPanel)
+    categoryScroll:SetPoint("TOPLEFT", categoryPanel, "TOPLEFT", 5, -25)
+    categoryScroll:SetPoint("BOTTOMRIGHT", categoryPanel, "BOTTOMRIGHT", -5, 5)
+    categoryScroll:SetFrameLevel(categoryPanel:GetFrameLevel() + 1)
+    
+    local categoryContent = CreateFrame("Frame", "WoW95AchievementCategoryContent", categoryScroll)
+    categoryContent:SetSize(165, 400)
+    categoryContent:SetFrameLevel(categoryScroll:GetFrameLevel() + 1)
+    categoryScroll:SetScrollChild(categoryContent)
+    
+    -- Disable mouse events on scroll frame but allow them on content
+    categoryScroll:EnableMouse(false)
+    categoryScroll:SetMouseClickEnabled(false)
+    categoryContent:EnableMouse(true) -- Must allow mouse events for buttons
+    
+    -- Add simple mouse wheel scrolling
+    categoryPanel:SetScript("OnMouseWheel", function(self, delta)
+        local currentScroll = categoryScroll:GetVerticalScroll()
+        local maxScroll = math.max(0, categoryContent:GetHeight() - categoryScroll:GetHeight())
+        local newScroll = math.max(0, math.min(maxScroll, currentScroll - (delta * 20)))
+        categoryScroll:SetVerticalScroll(newScroll)
+    end)
+    categoryPanel:EnableMouseWheel(true)
+    
+    achievementsWindow.categoryPanel = categoryPanel
+    achievementsWindow.categoryScroll = categoryScroll
+    achievementsWindow.categoryContent = categoryContent
+end
+
+function Windows:CreateAchievementsPanel(achievementsWindow)
+    -- Create achievement display panel (right side) - ensure it doesn't overlap category buttons
+    local achievementPanel = CreateFrame("Frame", "WoW95AchievementDisplay", achievementsWindow, "BackdropTemplate")
+    achievementPanel:SetPoint("TOPLEFT", achievementsWindow.categoryPanel, "TOPRIGHT", 10, 0)
+    achievementPanel:SetPoint("BOTTOMRIGHT", achievementsWindow, "BOTTOMRIGHT", -15, 15)
+    
+    -- Ensure this panel doesn't block mouse events for category buttons
+    achievementPanel:SetFrameLevel(achievementsWindow:GetFrameLevel() + 1) -- Lower than buttons
+    
+    -- Achievement panel background
+    achievementPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    achievementPanel:SetBackdropColor(1, 1, 1, 1)
+    achievementPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Search box
+    local searchFrame = CreateFrame("Frame", nil, achievementPanel, "BackdropTemplate")
+    searchFrame:SetPoint("TOPLEFT", achievementPanel, "TOPLEFT", 10, -10)
+    searchFrame:SetPoint("TOPRIGHT", achievementPanel, "TOPRIGHT", -10, -10)
+    searchFrame:SetHeight(25)
+    searchFrame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    searchFrame:SetBackdropColor(0.95, 0.95, 0.95, 1)
+    searchFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Search label
+    local searchLabel = searchFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    searchLabel:SetPoint("LEFT", searchFrame, "LEFT", 5, 0)
+    searchLabel:SetText("Search:")
+    searchLabel:SetTextColor(0, 0, 0, 1)
+    
+    -- Search edit box
+    local searchBox = CreateFrame("EditBox", "WoW95AchievementSearchBox", searchFrame, "BackdropTemplate")
+    searchBox:SetPoint("LEFT", searchLabel, "RIGHT", 10, 0)
+    searchBox:SetPoint("RIGHT", searchFrame, "RIGHT", -80, 0)
+    searchBox:SetHeight(18)
+    searchBox:SetAutoFocus(false)
+    searchBox:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    searchBox:SetTextColor(0, 0, 0, 1)
+    searchBox:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    searchBox:SetBackdropColor(1, 1, 1, 1)
+    searchBox:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    -- Search button
+    local searchButton = WoW95:CreateButton("WoW95SearchBtn", searchFrame, 60, 18, "Search")
+    searchButton:SetPoint("RIGHT", searchFrame, "RIGHT", -5, 0)
+    
+    -- Clear button
+    local clearButton = WoW95:CreateButton("WoW95ClearBtn", searchFrame, 50, 18, "Clear")
+    clearButton:SetPoint("RIGHT", searchButton, "LEFT", -5, 0)
+    
+    -- Category title
+    local categoryTitle = achievementPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    categoryTitle:SetPoint("TOPLEFT", searchFrame, "BOTTOMLEFT", 0, -10)
+    categoryTitle:SetText("Select a category")
+    categoryTitle:SetTextColor(0, 0, 0, 1)
+    
+    -- Create scrollable achievement list
+    local achievementScroll = CreateFrame("ScrollFrame", "WoW95AchievementScroll", achievementPanel, "UIPanelScrollFrameTemplate")
+    achievementScroll:SetPoint("TOPLEFT", categoryTitle, "BOTTOMLEFT", 0, -10)
+    achievementScroll:SetPoint("BOTTOMRIGHT", achievementPanel, "BOTTOMRIGHT", -25, 5)
+    
+    local achievementContent = CreateFrame("Frame", "WoW95AchievementContent", achievementScroll)
+    achievementContent:SetWidth(achievementPanel:GetWidth() - 35)
+    achievementContent:SetHeight(400)
+    achievementScroll:SetScrollChild(achievementContent)
+    
+    -- Search functionality
+    searchButton:SetScript("OnClick", function()
+        local searchTerm = searchBox:GetText()
+        if searchTerm and searchTerm:len() > 0 then
+            self:SearchAchievements(achievementsWindow, searchTerm)
+        end
+    end)
+    
+    clearButton:SetScript("OnClick", function()
+        searchBox:SetText("")
+        -- Return to category view
+        if achievementsWindow.currentCategory then
+            self:LoadCategoryAchievements(achievementsWindow, achievementsWindow.currentCategory)
+        end
+    end)
+    
+    -- Enter key to search
+    searchBox:SetScript("OnEnterPressed", function()
+        local searchTerm = searchBox:GetText()
+        if searchTerm and searchTerm:len() > 0 then
+            self:SearchAchievements(achievementsWindow, searchTerm)
+        end
+    end)
+    
+    achievementsWindow.achievementPanel = achievementPanel
+    achievementsWindow.achievementScroll = achievementScroll
+    achievementsWindow.achievementContent = achievementContent
+    achievementsWindow.categoryTitle = categoryTitle
+    achievementsWindow.searchBox = searchBox
+end
+
+function Windows:LoadAchievementCategories(achievementsWindow)
+    WoW95:Debug("Loading achievement categories...")
+    
+    -- Clear existing category buttons
+    for _, button in pairs(achievementsWindow.categoryButtons) do
+        button:Hide()
+    end
+    achievementsWindow.categoryButtons = {}
+    achievementsWindow.expandedCategories = achievementsWindow.expandedCategories or {}
+    
+    -- Get category list
+    local categories = GetCategoryList()
+    if not categories then
+        WoW95:Debug("No categories found")
+        return
+    end
+    
+    local yOffset = 0
+    local buttonIndex = 0
+    
+    -- Function to create subcategory buttons
+    local function CreateSubcategoryButtons(parentID, parentName, startY)
+        local subY = startY
+        local subcategoryCount = 0
+        
+        for _, subCategoryID in ipairs(categories) do
+            local subCategoryName, subParentID, flags = GetCategoryInfo(subCategoryID)
+            if subCategoryName and subParentID == parentID then
+                local subButton = self:CreateCategoryButton(achievementsWindow, subCategoryID, "  " .. subCategoryName, subY)
+                subButton.isSubcategory = true
+                subButton.parentCategory = parentID
+                
+                -- Apply grey styling for subcategories after creation
+                self:ApplyCategoryButtonStyling(subButton)
+                table.insert(achievementsWindow.categoryButtons, subButton)
+                subY = subY + 35 -- Increased spacing for testing
+                subcategoryCount = subcategoryCount + 1
+            end
+        end
+        
+        return subY, subcategoryCount
+    end
+    
+    for i, categoryID in ipairs(categories) do
+        local categoryName, parentID, flags = GetCategoryInfo(categoryID)
+        
+        if categoryName and parentID == -1 then -- Only show top-level categories
+            buttonIndex = buttonIndex + 1
+            WoW95:Debug("Creating button #" .. buttonIndex .. ": " .. categoryName .. " at yOffset " .. yOffset .. " (categoryID: " .. categoryID .. ")")
+            
+            -- Check if category has subcategories
+            local hasSubcategories = false
+            for _, subCategoryID in ipairs(categories) do
+                local subCategoryName, subParentID, flags = GetCategoryInfo(subCategoryID)
+                if subCategoryName and subParentID == categoryID then
+                    hasSubcategories = true
+                    break
+                end
+            end
+            
+            local buttonText = categoryName
+            if hasSubcategories then
+                buttonText = (achievementsWindow.expandedCategories[categoryID] and "- " or "+ ") .. categoryName
+            end
+            
+            local button = self:CreateCategoryButton(achievementsWindow, categoryID, buttonText, yOffset)
+            button.hasSubcategories = hasSubcategories
+            button.originalName = categoryName
+            button.isMainCategory = true -- Mark as main category for styling
+            button.buttonIndex = buttonIndex -- For debugging
+            
+            -- Apply blue styling for main categories after creation
+            self:ApplyCategoryButtonStyling(button)
+            
+            -- Special click handler for expandable categories
+            if hasSubcategories then
+                button:SetScript("OnClick", function(buttonSelf, mouseButton)
+                    WoW95:Debug("Expandable category button clicked: " .. categoryName)
+                    
+                    -- Toggle expansion
+                    achievementsWindow.expandedCategories[categoryID] = not achievementsWindow.expandedCategories[categoryID]
+                    
+                    -- Reload categories to show/hide subcategories
+                    self:LoadAchievementCategories(achievementsWindow)
+                end)
+            end
+            
+            table.insert(achievementsWindow.categoryButtons, button)
+            yOffset = yOffset + 35 -- Increased spacing for testing
+            
+            -- Add subcategories if expanded
+            if hasSubcategories and achievementsWindow.expandedCategories[categoryID] then
+                local newY, subCount = CreateSubcategoryButtons(categoryID, categoryName, yOffset)
+                yOffset = newY
+            end
+        end
+    end
+    
+    -- Update content height
+    achievementsWindow.categoryContent:SetHeight(math.max(400, yOffset + 20))
+    
+    WoW95:Debug("Loaded " .. #achievementsWindow.categoryButtons .. " categories")
+end
+
+function Windows:CreateCategoryButton(achievementsWindow, categoryID, categoryName, yOffset)
+    -- Create button inside the category content frame where it belongs
+    local button = CreateFrame("Button", "WoW95CategoryBtn" .. categoryID .. "_" .. math.random(10000), achievementsWindow.categoryContent, "BackdropTemplate")
+    button:SetSize(160, 25) -- Proper size to fit in category panel
+    
+    -- Position within the category content frame
+    button:SetPoint("TOPLEFT", achievementsWindow.categoryContent, "TOPLEFT", 5, -yOffset)
+    
+    -- Ensure proper frame level for clicking
+    button:SetFrameLevel(achievementsWindow.categoryContent:GetFrameLevel() + 10)
+    
+    -- Explicitly enable mouse events
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    
+    WoW95:Debug("Created button: " .. categoryName .. " in category content at position (5, " .. (-yOffset) .. ") size 160x25")
+    
+    -- Set button backdrop (default grey - will be overridden for main categories)
+    button:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    button:SetBackdropColor(unpack(WoW95.colors.buttonFace))
+    button:SetBackdropBorderColor(unpack(WoW95.colors.buttonShadow))
+    
+    -- Create button text
+    local buttonText = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    buttonText:SetPoint("CENTER", button, "CENTER", 0, 0)
+    buttonText:SetText(categoryName)
+    buttonText:SetTextColor(0, 0, 0, 1)
+    buttonText:SetShadowColor(0, 0, 0, 0)
+    button.text = buttonText
+    
+    -- Make it VERY high frame level and ensure it's clickable
+    button:SetFrameLevel(1000) -- Extremely high frame level
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    button:SetHitRectInsets(0, 0, 0, 0)
+    
+    -- Add a VERY visible border for debugging which buttons work
+    local testBorder = button:CreateTexture(nil, "OVERLAY") 
+    testBorder:SetAllPoints()
+    testBorder:SetColorTexture(0, 1, 0, 0.5) -- Very bright green tint to see button bounds clearly
+    button.testBorder = testBorder
+    
+    -- Add a distinctive debug message based on category name
+    if categoryName == "Quests" then
+        WoW95:Debug("!!! QUESTS BUTTON CREATED - should be very green !!!")
+    elseif categoryName == "Exploration" then
+        WoW95:Debug("!!! EXPLORATION BUTTON CREATED - should be very green !!!")
+    end
+    
+    -- Store category ID
+    button.categoryID = categoryID
+    
+    -- Note: Styling is applied manually after button properties are set
+    
+    -- Set default click handler (will be overridden for expandable categories)
+    button:SetScript("OnClick", function(buttonSelf, mouseButton)
+        WoW95:Debug("=== CATEGORY BUTTON CLICK DEBUG ===")
+        WoW95:Debug("Button: " .. categoryName)
+        WoW95:Debug("Category ID: " .. categoryID)
+        WoW95:Debug("Mouse Button: " .. tostring(mouseButton))
+        WoW95:Debug("Has Subcategories: " .. tostring(button.hasSubcategories))
+        WoW95:Debug("Is Subcategory: " .. tostring(button.isSubcategory))
+        
+        -- Only load achievements if this isn't an expandable category or is a subcategory
+        if not button.hasSubcategories or button.isSubcategory then
+            WoW95:Debug("Loading achievements for category: " .. categoryName)
+            -- Use 'self' which refers to the Windows object, not the button
+            local success, err = pcall(self.SelectAchievementCategory, self, achievementsWindow, categoryID, categoryName)
+            if not success then
+                WoW95:Debug("ERROR in SelectAchievementCategory: " .. tostring(err))
+                print("WoW95 Error: " .. tostring(err))
+            end
+            
+            -- Visual feedback - highlight selected button
+            for _, btn in pairs(achievementsWindow.categoryButtons) do
+                if btn.highlight then
+                    btn.highlight:Hide()
+                end
+            end
+            
+            if not button.highlight then
+                button.highlight = button:CreateTexture(nil, "OVERLAY")
+                button.highlight:SetAllPoints()
+                button.highlight:SetColorTexture(0.3, 0.3, 0.7, 0.3)
+            end
+            button.highlight:Show()
+        else
+            WoW95:Debug("This is an expandable category, not loading achievements")
+        end
+    end)
+    
+    -- Add mouse down/up detection for debugging
+    button:SetScript("OnMouseDown", function(self, mouseButton)
+        WoW95:Debug("Mouse DOWN on button: " .. categoryName .. " (" .. mouseButton .. ")")
+    end)
+    
+    button:SetScript("OnMouseUp", function(self, mouseButton)
+        WoW95:Debug("Mouse UP on button: " .. categoryName .. " (" .. mouseButton .. ")")
+    end)
+    
+    -- Add hover effects for better feedback
+    button:SetScript("OnEnter", function(self)
+        if not self.highlight or not self.highlight:IsShown() then
+            if not self.hoverHighlight then
+                self.hoverHighlight = self:CreateTexture(nil, "HIGHLIGHT")
+                self.hoverHighlight:SetAllPoints()
+                self.hoverHighlight:SetColorTexture(0.7, 0.7, 0.9, 0.3)
+            end
+            self.hoverHighlight:Show()
+        end
+    end)
+    
+    button:SetScript("OnLeave", function(self)
+        if self.hoverHighlight then
+            self.hoverHighlight:Hide()
+        end
+    end)
+    
+    return button
+end
+
+function Windows:ApplyCategoryButtonStyling(button)
+    if button.isMainCategory then
+        -- Main category headers: Windows 95 blue background with white text
+        button:SetBackdropColor(unpack(WoW95.colors.titleBar))
+        button:SetBackdropBorderColor(0.2, 0.2, 0.4, 1)
+        
+        -- Style button text to white
+        if button.text then
+            button.text:SetTextColor(1, 1, 1, 1) -- White text
+            button.text:SetShadowColor(0, 0, 0, 0) -- No shadow
+        end
+        
+        -- Remove test border for clean look
+        if button.testBorder then
+            button.testBorder:Hide()
+        end
+    else
+        -- Subcategory buttons: Keep default grey styling
+        -- Default grey background is already set in CreateCategoryButton
+        
+        -- Ensure text is black for subcategories
+        if button.text then
+            button.text:SetTextColor(0, 0, 0, 1) -- Black text
+            button.text:SetShadowColor(0, 0, 0, 0) -- No shadow
+        end
+        
+        -- Remove test border for clean look
+        if button.testBorder then
+            button.testBorder:Hide()
+        end
+    end
+end
+
+function Windows:SelectAchievementCategory(achievementsWindow, categoryID, categoryName)
+    WoW95:Debug("Selected category: " .. categoryName .. " (" .. categoryID .. ")")
+    
+    achievementsWindow.currentCategory = categoryID
+    achievementsWindow.categoryTitle:SetText(categoryName)
+    
+    -- Load achievements for this category
+    self:LoadCategoryAchievements(achievementsWindow, categoryID)
+end
+
+function Windows:LoadCategoryAchievements(achievementsWindow, categoryID)
+    WoW95:Debug("Loading achievements for category: " .. categoryID)
+    
+    -- Add error handling for problematic categories
+    local categoryName = GetCategoryInfo(categoryID)
+    if categoryName then
+        WoW95:Debug("Category name: " .. categoryName)
+    else
+        WoW95:Debug("ERROR: Could not get category name for ID: " .. categoryID)
+        return
+    end
+    
+    -- Clear existing achievement buttons
+    for _, button in pairs(achievementsWindow.achievementButtons) do
+        button:Hide()
+    end
+    achievementsWindow.achievementButtons = {}
+    
+    local yOffset = 10
+    local achievementCount = 0
+    
+    -- Function to load achievements from a category (including ALL nested subcategories)
+    local function LoadAchievementsFromCategory(catID, depth)
+        depth = depth or 0
+        local indent = string.rep("  ", depth)
+        
+        local numAchievements = GetCategoryNumAchievements(catID)
+        if not numAchievements then
+            WoW95:Debug(indent .. "ERROR: GetCategoryNumAchievements returned nil for category " .. catID)
+            return
+        end
+        WoW95:Debug(indent .. "Category " .. catID .. " has " .. numAchievements .. " direct achievements")
+        
+        -- Load direct achievements from this category
+        if numAchievements and numAchievements > 0 then
+            for i = 1, numAchievements do
+                local success, achievementID, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe = pcall(GetAchievementInfo, catID, i)
+                
+                if success and achievementID and name then
+                    WoW95:Debug(indent .. "  - Found achievement: " .. name .. " (ID: " .. achievementID .. ")")
+                    local button = self:CreateAchievementButton(achievementsWindow, achievementID, name, points, completed, description, icon, yOffset)
+                    table.insert(achievementsWindow.achievementButtons, button)
+                    yOffset = yOffset + 80
+                    achievementCount = achievementCount + 1
+                end
+            end
+        end
+        
+        -- Recursively load from ALL subcategories (this ensures we get everything)
+        local categories = GetCategoryList()
+        if categories then
+            for _, subCategoryID in ipairs(categories) do
+                local subCategoryName, parentID, flags = GetCategoryInfo(subCategoryID)
+                if parentID == catID then
+                    WoW95:Debug(indent .. "Found subcategory: " .. (subCategoryName or "Unknown") .. " (ID: " .. subCategoryID .. ")")
+                    LoadAchievementsFromCategory(subCategoryID, depth + 1)
+                end
+            end
+        end
+    end
+    
+    -- Load achievements from main category and subcategories
+    LoadAchievementsFromCategory(categoryID)
+    
+    -- If no achievements found, show a message
+    if achievementCount == 0 then
+        local noAchievements = CreateFrame("Frame", nil, achievementsWindow.achievementContent, "BackdropTemplate")
+        noAchievements:SetSize(achievementsWindow.achievementContent:GetWidth() - 20, 60)
+        noAchievements:SetPoint("TOPLEFT", achievementsWindow.achievementContent, "TOPLEFT", 10, -yOffset)
+        noAchievements:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 1, right = 1, top = 1, bottom = 1}
+        })
+        noAchievements:SetBackdropColor(0.95, 0.95, 0.95, 1)
+        noAchievements:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+        
+        local noAchievementsText = noAchievements:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noAchievementsText:SetPoint("CENTER", noAchievements, "CENTER", 0, 0)
+        noAchievementsText:SetText("No achievements found in this category")
+        noAchievementsText:SetTextColor(0.5, 0.5, 0.5, 1)
+        
+        table.insert(achievementsWindow.achievementButtons, noAchievements)
+        yOffset = yOffset + 80
+    end
+    
+    -- Update content height
+    achievementsWindow.achievementContent:SetHeight(math.max(400, yOffset + 20))
+    
+    WoW95:Debug("Loaded " .. achievementCount .. " achievements from category and subcategories")
+end
+
+function Windows:SearchAchievements(achievementsWindow, searchTerm)
+    WoW95:Debug("Searching achievements for: " .. searchTerm)
+    
+    -- Clear existing achievement buttons
+    for _, button in pairs(achievementsWindow.achievementButtons) do
+        button:Hide()
+    end
+    achievementsWindow.achievementButtons = {}
+    
+    -- Update category title to show search
+    achievementsWindow.categoryTitle:SetText("Search Results: \"" .. searchTerm .. "\"")
+    
+    local yOffset = 10
+    local searchResults = 0
+    local searchLower = searchTerm:lower()
+    
+    -- Search through all categories
+    local categories = GetCategoryList()
+    if categories then
+        for _, categoryID in ipairs(categories) do
+            local numAchievements = GetCategoryNumAchievements(categoryID)
+            if numAchievements and numAchievements > 0 then
+                for i = 1, numAchievements do
+                    local achievementID, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe = GetAchievementInfo(categoryID, i)
+                    
+                    if achievementID and name then
+                        -- Search in name and description
+                        local nameMatch = name:lower():find(searchLower, 1, true)
+                        local descMatch = description and description:lower():find(searchLower, 1, true)
+                        
+                        if nameMatch or descMatch then
+                            local button = self:CreateAchievementButton(achievementsWindow, achievementID, name, points, completed, description, icon, yOffset)
+                            table.insert(achievementsWindow.achievementButtons, button)
+                            yOffset = yOffset + 80
+                            searchResults = searchResults + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- If no search results, show a message
+    if searchResults == 0 then
+        local noResults = CreateFrame("Frame", nil, achievementsWindow.achievementContent, "BackdropTemplate")
+        noResults:SetSize(achievementsWindow.achievementContent:GetWidth() - 20, 80)
+        noResults:SetPoint("TOPLEFT", achievementsWindow.achievementContent, "TOPLEFT", 10, -yOffset)
+        noResults:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1,
+            insets = {left = 1, right = 1, top = 1, bottom = 1}
+        })
+        noResults:SetBackdropColor(0.95, 0.95, 0.95, 1)
+        noResults:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+        
+        local noResultsText = noResults:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noResultsText:SetPoint("CENTER", noResults, "CENTER", 0, 0)
+        noResultsText:SetText("No achievements found matching \"" .. searchTerm .. "\"\n\nTry different search terms or browse categories")
+        noResultsText:SetTextColor(0.5, 0.5, 0.5, 1)
+        noResultsText:SetJustifyH("CENTER")
+        
+        table.insert(achievementsWindow.achievementButtons, noResults)
+        yOffset = yOffset + 100
+    end
+    
+    -- Update content height
+    achievementsWindow.achievementContent:SetHeight(math.max(400, yOffset + 20))
+    
+    WoW95:Debug("Found " .. searchResults .. " achievements matching search term")
+end
+
+function Windows:CreateAchievementButton(achievementsWindow, achievementID, name, points, completed, description, icon, yOffset)
+    -- Create achievement button frame
+    local button = CreateFrame("Frame", "WoW95Achievement" .. achievementID, achievementsWindow.achievementContent, "BackdropTemplate")
+    button:SetSize(achievementsWindow.achievementContent:GetWidth() - 20, 70)
+    button:SetPoint("TOPLEFT", achievementsWindow.achievementContent, "TOPLEFT", 10, -yOffset)
+    
+    -- Achievement background
+    button:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    
+    -- Different colors for completed/incomplete
+    if completed then
+        button:SetBackdropColor(0.9, 0.95, 0.8, 1) -- Light green for completed
+    else
+        button:SetBackdropColor(0.95, 0.95, 0.95, 1) -- Light gray for incomplete
+    end
+    button:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Achievement icon
+    local iconTexture = button:CreateTexture(nil, "ARTWORK")
+    iconTexture:SetSize(48, 48)
+    iconTexture:SetPoint("LEFT", button, "LEFT", 8, 0)
+    if icon then
+        iconTexture:SetTexture(icon)
+    end
+    
+    -- Achievement name
+    local nameText = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    nameText:SetPoint("TOPLEFT", iconTexture, "TOPRIGHT", 8, -2)
+    nameText:SetPoint("TOPRIGHT", button, "TOPRIGHT", -80, -2)
+    nameText:SetJustifyH("LEFT")
+    nameText:SetText(name)
+    nameText:SetTextColor(0, 0, 0, 1)
+    nameText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Achievement points
+    local pointsText = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    pointsText:SetPoint("TOPRIGHT", button, "TOPRIGHT", -8, -5)
+    pointsText:SetText(points .. " points")
+    pointsText:SetTextColor(0.2, 0.4, 0.8, 1)
+    pointsText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Achievement description
+    local descText = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    descText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -3)
+    descText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -8, 8)
+    descText:SetJustifyH("LEFT")
+    descText:SetJustifyV("TOP")
+    descText:SetText(description or "")
+    descText:SetTextColor(0.3, 0.3, 0.3, 1)
+    descText:SetShadowColor(0, 0, 0, 0)
+    
+    -- Completed checkmark
+    if completed then
+        local checkmark = button:CreateTexture(nil, "OVERLAY")
+        checkmark:SetSize(24, 24)
+        checkmark:SetPoint("TOPRIGHT", pointsText, "BOTTOMRIGHT", 0, -2)
+        checkmark:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready")
+    end
+    
+    return button
+end
+
+function Windows:UpdateSlotDisplay(slotId, itemIcon, slotData)
+    local itemID = GetInventoryItemID("player", slotId)
+    if itemID then
+        local itemTexture = GetItemIcon(itemID)
+        if itemTexture then
+            itemIcon:SetTexture(itemTexture)
+            itemIcon:SetVertexColor(1, 1, 1, 1) -- Full color for equipped items
+        else
+            -- Fallback to slot icon if item texture fails
+            itemIcon:SetTexture(slotData.icon)
+            itemIcon:SetVertexColor(0.5, 0.5, 0.5, 1)
+        end
+    else
+        -- Empty slot - show slot icon but darkened
+        itemIcon:SetTexture(slotData.icon)
+        itemIcon:SetVertexColor(0.4, 0.4, 0.4, 0.8) -- Darker and more transparent for empty
+    end
+end
+
+function Windows:RefreshCharacterEquipment(programWindow)
+    if not programWindow.equipmentSlots then return end
+    
+    WoW95:Debug("Refreshing character equipment display")
+    
+    for slotId, slotInfo in pairs(programWindow.equipmentSlots) do
+        -- Find slot data
+        local slotData = nil
+        for _, data in ipairs(programWindow.EQUIPMENT_SLOTS) do
+            if data.slot == slotId then
+                slotData = data
+                break
+            end
+        end
+        
+        if slotData then
+            -- Update slot icon/item display
+            self:UpdateSlotDisplay(slotId, slotInfo.icon, slotData)
+            
+            -- Update item level
+            local itemID = GetInventoryItemID("player", slotId)
+            if itemID then
+                local itemLevel = GetDetailedItemLevelInfo(GetInventoryItemLink("player", slotId))
+                if itemLevel and itemLevel > 0 then
+                    slotInfo.ilvl:SetText("(" .. itemLevel .. ")")
+                else
+                    slotInfo.ilvl:SetText("")
+                end
+            else
+                slotInfo.ilvl:SetText("")
+            end
+        end
+    end
+    
+    -- Refresh the player model to show equipment changes
+    if programWindow.playerModel then
+        programWindow.playerModel:RefreshUnit()
+    end
+end
+
+function Windows:CreateProgramWindow(frameName, program)
+    -- Don't create duplicate windows
+    if self.programWindows[frameName] then 
+        WoW95:Debug("Program window already exists for: " .. frameName)
+        return self.programWindows[frameName]
+    end
+    
+    WoW95:Debug("Creating program window for frame: " .. frameName .. " program: " .. program.name)
+    
+    -- Create the program window using WoW95 window system
+    local windowConfig = program.window
+    local programWindow = WoW95:CreateWindow(
+        "WoW95Program_" .. frameName, 
+        UIParent, 
+        windowConfig.width, 
+        windowConfig.height, 
+        windowConfig.title
+    )
+    
+    -- Position window randomly on screen
+    programWindow:SetPoint("CENTER", UIParent, "CENTER", 
+        math.random(-200, 200), 
+        math.random(-100, 100))
+    
+    -- Create window menu bar
+    local menuBar = CreateFrame("Frame", nil, programWindow, "BackdropTemplate")
+    menuBar:SetPoint("TOPLEFT", programWindow, "TOPLEFT", 8, -30)
+    menuBar:SetPoint("TOPRIGHT", programWindow, "TOPRIGHT", -8, -30)
+    menuBar:SetHeight(20)
+    menuBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 1
+    })
+    menuBar:SetBackdropColor(0.75, 0.75, 0.75, 1)
+    
+    -- Create menu items
+    local menuItems = {"File", "Edit", "View", "Help"}
+    local menuX = 0
+    for _, menuName in ipairs(menuItems) do
+        local menuItem = menuBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        menuItem:SetPoint("LEFT", menuBar, "LEFT", menuX + 8, 0)
+        menuItem:SetText(menuName)
+        menuItem:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+        menuItem:SetTextColor(0, 0, 0, 1)
+        menuX = menuX + menuItem:GetStringWidth() + 16
+    end
+    
+    -- Create content area
+    local contentArea = CreateFrame("Frame", nil, programWindow, "BackdropTemplate")
+    contentArea:SetPoint("TOPLEFT", menuBar, "BOTTOMLEFT", 0, -2)
+    contentArea:SetPoint("BOTTOMRIGHT", programWindow, "BOTTOMRIGHT", -8, 8)
+    contentArea:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    contentArea:SetBackdropColor(1, 1, 1, 1) -- White content area
+    contentArea:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create a fake content message
+    local contentText = contentArea:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    contentText:SetPoint("CENTER", contentArea, "CENTER", 0, 0)
+    contentText:SetText("This program is currently running.\n\nOriginal " .. program.name .. " window\nis hidden behind this interface.")
+    contentText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    contentText:SetTextColor(0, 0, 0, 1)
+    contentText:SetJustifyH("CENTER")
+    
+    -- CRITICAL: Set properties for taskbar recognition
+    programWindow.programName = program.name
+    programWindow.frameName = frameName
+    programWindow.isWoW95Window = true
+    programWindow.isProgramWindow = true -- Additional flag
+    
+    -- Store reference
+    self.programWindows[frameName] = programWindow
+    
+    -- Show the window
+    programWindow:Show()
+    
+    -- IMPORTANT: Notify taskbar through the proper event system
+    WoW95:Debug("Triggering window opened event for: " .. program.name)
+    WoW95:OnWindowOpened(programWindow)
+    
+    return programWindow
+end
+
+function Windows:RemoveProgramWindow(frameName)
+    local programWindow = self.programWindows[frameName]
+    if programWindow then
+        WoW95:Debug("Removing program window for: " .. frameName)
+        
+        -- Notify taskbar
+        WoW95:OnWindowClosed(programWindow)
+        
+        -- Hide and cleanup
+        programWindow:Hide()
+        self.programWindows[frameName] = nil
+        
+        -- Special handling for CharacterFrame to ensure consistent state
+        if frameName == "CharacterFrame" then
+            WoW95:Debug("Character window removed from tracking (via RemoveProgramWindow)")
+        end
+    end
+end
+
+function Windows:HookBlizzardWindows()
+    WoW95:Debug("Starting HookBlizzardWindows...")
+    
+    -- Hook into Blizzard UI window show/hide events
+    local function HookFrame(frameName)
+        local frame = _G[frameName]
+        if frame then
+            WoW95:Debug("Hooking frame: " .. frameName)
+            
+            -- Hook show - ONLY if not already hooked
+            if not frame.WoW95ShowHooked then
+                frame:HookScript("OnShow", function()
+                    local program = self.PROGRAMS[frameName]
+                    if program then
+                        WoW95:Debug("Blizzard frame shown: " .. frameName .. ", creating program window")
+                        
+                        -- For frames where we want to replace the UI, hide the original
+                        if frameName ~= "WorldMapFrame" then
+                            frame:SetAlpha(0)
+                            frame:EnableMouse(false)
+                        end
+                        
+                        -- Create our program window (or specialized window)
+                        if frameName == "CharacterFrame" then
+                            self:CreateCharacterInfoWindow(frameName, program)
+                        elseif frameName == "AchievementFrame" then
+                            self:CreateAchievementsWindow(frameName, program)
+                        elseif frameName == "WorldMapFrame" then
+                            self:ReskinWorldMapFrame(frameName, program)
+                        elseif frameName == "QuestLogFrame" then
+                            self:CreateQuestLogWindow(frameName, program)
+                        else
+                            self:CreateProgramWindow(frameName, program)
+                        end
+                    end
+                end)
+                frame.WoW95ShowHooked = true
+                WoW95:Debug("Successfully hooked OnShow for: " .. frameName)
+            end
+            
+            -- Hook hide - ONLY if not already hooked
+            if not frame.WoW95HideHooked then
+                frame:HookScript("OnHide", function()
+                    WoW95:Debug("Blizzard frame hidden: " .. frameName .. ", removing program window")
+                    
+                    -- Restore original frame
+                    frame:SetAlpha(1)
+                    frame:EnableMouse(true)
+                    
+                    -- Remove our program window (or specialized window)
+                    if frameName == "WorldMapFrame" then
+                        self:CleanupWorldMapReskin(frameName)
+                    elseif frameName == "QuestLogFrame" then
+                        self:CleanupQuestLogWindow(frameName)
+                    elseif frameName == "CharacterFrame" then
+                        self:RemoveProgramWindow(frameName)
+                    else
+                        self:RemoveProgramWindow(frameName)
+                    end
+                end)
+                frame.WoW95HideHooked = true
+                WoW95:Debug("Successfully hooked OnHide for: " .. frameName)
+            end
+            
+            -- If frame is already shown, create window immediately
+            if frame:IsShown() then
+                local program = self.PROGRAMS[frameName]
+                if program then
+                    WoW95:Debug("Frame already shown: " .. frameName .. ", creating program window immediately")
+                    if frameName ~= "WorldMapFrame" then
+                        frame:SetAlpha(0)
+                        frame:EnableMouse(false)
+                    end
+                    if frameName == "CharacterFrame" then
+                        self:CreateCharacterInfoWindow(frameName, program)
+                    elseif frameName == "AchievementFrame" then
+                        self:CreateAchievementsWindow(frameName, program)
+                    elseif frameName == "WorldMapFrame" then
+                        self:ReskinWorldMapFrame(frameName, program)
+                    else
+                        self:CreateProgramWindow(frameName, program)
+                    end
+                end
+            end
+        else
+            WoW95:Debug("Frame not found: " .. frameName)
+        end
+    end
+    
+    -- Hook all known program frames
+    local programCount = 0
+    for _ in pairs(self.PROGRAMS) do programCount = programCount + 1 end
+    WoW95:Debug("Attempting to hook " .. programCount .. " program frames...")
+    for frameName, program in pairs(self.PROGRAMS) do
+        WoW95:Debug("Trying to hook: " .. frameName .. " (" .. program.name .. ")")
+        HookFrame(frameName)
+    end
+    
+    -- Hook frames that load later
+    local hookFrame = CreateFrame("Frame")
+    hookFrame:RegisterEvent("ADDON_LOADED")
+    hookFrame:SetScript("OnEvent", function(self, event, addonName)
+        if addonName == "Blizzard_AchievementUI" then
+            HookFrame("AchievementFrame")
+        elseif addonName == "Blizzard_EncounterJournal" then
+            HookFrame("EncounterJournal")
+        elseif addonName == "Blizzard_Collections" then
+            HookFrame("CollectionsJournal")
+        elseif addonName == "Blizzard_GuildUI" then
+            HookFrame("GuildFrame")
+        end
+    end)
+    
+    -- Override key bindings to use our windows instead of Blizzard's
+    self:SetupKeyBindingOverrides()
+    
+    WoW95:Debug("Finished hooking Blizzard windows")
+end
+
+-- Key binding override system to prevent vanilla UI from showing
+function Windows:SetupKeyBindingOverrides()
+    WoW95:Debug("Setting up key binding overrides...")
+    
+    -- Override ToggleWorldMap to use our system
+    if ToggleWorldMap then
+        local originalToggleWorldMap = ToggleWorldMap
+        ToggleWorldMap = function(...)
+            WoW95:Debug("ToggleWorldMap intercepted")
+            
+            -- Check if our map window is open
+            if Windows.programWindows["WorldMapFrame"] then
+                -- Close our map
+                WoW95:Debug("Closing WoW95 map window")
+                if WorldMapFrame then
+                    WorldMapFrame:Hide()  -- This will trigger our OnHide hook
+                end
+            else
+                -- Open our map
+                WoW95:Debug("Opening WoW95 map window")
+                if WorldMapFrame then
+                    WorldMapFrame:Show()  -- This will trigger our OnShow hook
+                else
+                    -- Fallback to original if WorldMapFrame doesn't exist
+                    originalToggleWorldMap(...)
+                end
+            end
+        end
+        WoW95:Debug("ToggleWorldMap function overridden")
+    end
+    
+    -- Override ToggleCharacter to use our system
+    if ToggleCharacter then
+        local originalToggleCharacter = ToggleCharacter
+        ToggleCharacter = function(...)
+            WoW95:Debug("ToggleCharacter intercepted")
+            
+            if Windows.programWindows["CharacterFrame"] then
+                if CharacterFrame then
+                    CharacterFrame:Hide()
+                end
+            else
+                if CharacterFrame then
+                    CharacterFrame:Show()
+                else
+                    originalToggleCharacter(...)
+                end
+            end
+        end
+        WoW95:Debug("ToggleCharacter function overridden")
+    end
+    
+    -- Override ToggleQuestLog to use our system
+    if ToggleQuestLog then
+        local originalToggleQuestLog = ToggleQuestLog
+        ToggleQuestLog = function(...)
+            WoW95:Debug("ToggleQuestLog intercepted")
+            
+            if Windows.programWindows["QuestLogFrame"] then
+                if QuestLogFrame then
+                    QuestLogFrame:Hide()
+                end
+            else
+                if QuestLogFrame then
+                    QuestLogFrame:Show()
+                else
+                    originalToggleQuestLog(...)
+                end
+            end
+        end
+        WoW95:Debug("ToggleQuestLog function overridden")
+    end
+    
+    -- Override other toggle functions as needed
+    if ToggleGameMenu then
+        local originalToggleGameMenu = ToggleGameMenu
+        ToggleGameMenu = function(...)
+            WoW95:Debug("ToggleGameMenu intercepted")
+            
+            if Windows.programWindows["GameMenuFrame"] then
+                if GameMenuFrame then
+                    GameMenuFrame:Hide()
+                end
+            else
+                if GameMenuFrame then
+                    GameMenuFrame:Show()
+                else
+                    originalToggleGameMenu(...)
+                end
+            end
+        end
+        WoW95:Debug("ToggleGameMenu function overridden")
+    end
+end
+
+-- Utility functions
+function Windows:GetProgramWindow(frameName)
+    return self.programWindows[frameName]
+end
+
+function Windows:GetAllProgramWindows()
+    return self.programWindows
+end
+
+function Windows:IsProgramWindowOpen(frameName)
+    return self.programWindows[frameName] ~= nil
+end
+
+-- Toggle a program window by its frame name
+function Windows:ToggleProgramWindow(frameName)
+    WoW95:Debug("Toggling program window: " .. frameName)
+    
+    local blizzardFrame = _G[frameName]
+    if not blizzardFrame then
+        WoW95:Debug("Blizzard frame not found: " .. frameName)
+        return false
+    end
+    
+    -- Check if our program window is currently open
+    if self:IsProgramWindowOpen(frameName) then
+        -- Close it
+        WoW95:Debug("Closing program window: " .. frameName)
+        blizzardFrame:Hide()  -- This will trigger our OnHide hook
+    else
+        -- Open it
+        WoW95:Debug("Opening program window: " .. frameName)
+        blizzardFrame:Show()  -- This will trigger our OnShow hook
+    end
+    
+    return true
+end
+
+-- Get the program info for a frame
+function Windows:GetProgramInfo(frameName)
+    return self.PROGRAMS[frameName]
+end
+
+-- Quest Log Window
+function Windows:CreateQuestLogWindow(frameName, program)
+    -- Hide any Blizzard quest log first
+    local blizzardQuestLog = _G[frameName]
+    if blizzardQuestLog then
+        blizzardQuestLog:Hide()
+    end
+    
+    -- Don't create duplicate windows
+    if self.programWindows[frameName] then 
+        WoW95:Debug("Quest Log window already exists, showing it")
+        local existingWindow = self.programWindows[frameName]
+        if not existingWindow:IsShown() then
+            existingWindow:Show()
+        end
+        return existingWindow
+    end
+    
+    WoW95:Debug("Creating Quest Log window")
+    
+    -- Create the window
+    local questLogWindow = WoW95:CreateWindow(
+        "WoW95QuestLog", 
+        UIParent, 
+        700, 
+        500, 
+        "Quest Log - World of Warcraft"
+    )
+    
+    -- Position window
+    questLogWindow:SetPoint("CENTER", UIParent, "CENTER", 50, 50)
+    
+    -- Create main content area with Windows 95 styling
+    local contentArea = CreateFrame("Frame", nil, questLogWindow, "BackdropTemplate")
+    contentArea:SetPoint("TOPLEFT", questLogWindow, "TOPLEFT", 8, -30)
+    contentArea:SetPoint("BOTTOMRIGHT", questLogWindow, "BOTTOMRIGHT", -8, 8)
+    contentArea:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    contentArea:SetBackdropColor(0.98, 0.98, 0.98, 1)
+    contentArea:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create left panel for quest list (with zones/regions)
+    local questListPanel = CreateFrame("Frame", nil, contentArea, "BackdropTemplate")
+    questListPanel:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 5, -5)
+    questListPanel:SetPoint("BOTTOMLEFT", contentArea, "BOTTOMLEFT", 5, 5)
+    questListPanel:SetWidth(250)
+    questListPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    questListPanel:SetBackdropColor(1, 1, 1, 1)
+    questListPanel:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+    
+    -- Create scrollable quest list
+    local scrollFrame = CreateFrame("ScrollFrame", "WoW95QuestLogListScroll", questListPanel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", questListPanel, "TOPLEFT", 5, -5)
+    scrollFrame:SetPoint("BOTTOMRIGHT", questListPanel, "BOTTOMRIGHT", -25, 5)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(scrollFrame:GetWidth(), 1)
+    scrollFrame:SetScrollChild(scrollChild)
+    
+    -- Populate quest list with zones and quests
+    self:PopulateQuestLogProper(scrollChild)
+    
+    -- Create right panel for quest details
+    local questDetailsPanel = CreateFrame("Frame", nil, contentArea, "BackdropTemplate")
+    questDetailsPanel:SetPoint("TOPLEFT", questListPanel, "TOPRIGHT", 5, 0)
+    questDetailsPanel:SetPoint("BOTTOMRIGHT", contentArea, "BOTTOMRIGHT", -5, 5)
+    questDetailsPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    questDetailsPanel:SetBackdropColor(1, 1, 1, 1)
+    questDetailsPanel:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+    
+    -- Quest title in details panel
+    local questTitle = questDetailsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    questTitle:SetPoint("TOPLEFT", questDetailsPanel, "TOPLEFT", 10, -10)
+    questTitle:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    questTitle:SetText("Select a quest to view details")
+    questTitle:SetTextColor(0.2, 0.2, 0.8, 1)
+    
+    -- Quest description area
+    local questDescription = questDetailsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    questDescription:SetPoint("TOPLEFT", questTitle, "BOTTOMLEFT", 0, -10)
+    questDescription:SetPoint("RIGHT", questDetailsPanel, "RIGHT", -10, 0)
+    questDescription:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    questDescription:SetText("")
+    questDescription:SetTextColor(0, 0, 0, 1)
+    questDescription:SetJustifyH("LEFT")
+    questDescription:SetJustifyV("TOP")
+    
+    -- Quest objectives area
+    local questObjectives = questDetailsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    questObjectives:SetPoint("TOPLEFT", questDescription, "BOTTOMLEFT", 0, -20)
+    questObjectives:SetPoint("RIGHT", questDetailsPanel, "RIGHT", -10, 0)
+    questObjectives:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    questObjectives:SetText("")
+    questObjectives:SetTextColor(0.5, 0.5, 0, 1)
+    questObjectives:SetJustifyH("LEFT")
+    questObjectives:SetJustifyV("TOP")
+    
+    -- Bottom buttons
+    local abandonBtn = WoW95:CreateButton("WoW95QuestAbandon", questDetailsPanel, 80, 22, "Abandon")
+    abandonBtn:SetPoint("BOTTOMLEFT", questDetailsPanel, "BOTTOMLEFT", 10, 10)
+    
+    local trackBtn = WoW95:CreateButton("WoW95QuestTrack", questDetailsPanel, 80, 22, "Track")
+    trackBtn:SetPoint("LEFT", abandonBtn, "RIGHT", 5, 0)
+    
+    local shareBtn = WoW95:CreateButton("WoW95QuestShare", questDetailsPanel, 80, 22, "Share")
+    shareBtn:SetPoint("LEFT", trackBtn, "RIGHT", 5, 0)
+    
+    -- Store references
+    questLogWindow.questListPanel = questListPanel
+    questLogWindow.questDetailsPanel = questDetailsPanel
+    questLogWindow.scrollFrame = scrollFrame
+    questLogWindow.scrollChild = scrollChild
+    questLogWindow.questTitle = questTitle
+    questLogWindow.questDescription = questDescription
+    questLogWindow.questObjectives = questObjectives
+    questLogWindow.selectedQuestID = nil
+    
+    -- Store window references
+    self.programWindows[frameName] = questLogWindow
+    questLogWindow.programName = program.name
+    questLogWindow.frameName = frameName
+    questLogWindow.isWoW95Window = true
+    questLogWindow.isProgramWindow = true
+    
+    -- Notify taskbar
+    WoW95:OnWindowOpened(questLogWindow)
+    
+    WoW95:Debug("Quest Log window created successfully")
+    return questLogWindow
+end
+
+-- Update quest details when a quest is selected
+function Windows:ShowQuestDetails(questID, questFrame)
+    local questLogWindow = self.programWindows["QuestLogFrame"]
+    if not questLogWindow then return end
+    
+    WoW95:Debug("Showing details for quest ID: " .. questID)
+    
+    -- Get quest info
+    local questInfo = C_QuestLog.GetQuestTagInfo(questID)
+    local title = C_QuestLog.GetTitleForQuestID(questID) or "Unknown Quest"
+    local objectiveText = ""
+    local description = ""
+    
+    -- Set quest title
+    questLogWindow.questTitle:SetText(title)
+    
+    -- Get quest description using QuestLogFrame if available
+    C_QuestLog.SetSelectedQuest(questID)
+    local questDescription = GetQuestLogQuestText()
+    questLogWindow.questDescription:SetText(questDescription or "")
+    
+    -- Get objectives
+    local numObjectives = C_QuestLog.GetNumQuestObjectives(questID)
+    local objectives = "Objectives:\n\n"
+    
+    for i = 1, numObjectives do
+        local text, type, finished = GetQuestLogLeaderBoard(i, questID)
+        if text then
+            if finished then
+                objectives = objectives .. "|cff00ff00" .. text .. "|r\n"
+            else
+                objectives = objectives .. text .. "\n"
+            end
+        end
+    end
+    
+    questLogWindow.questObjectives:SetText(objectives)
+    questLogWindow.selectedQuestID = questID
+end
+
+-- Create Custom WoW95 Map Window (replaces WorldMapFrame skinning)
+function Windows:CreateCustomMapWindow()
+    WoW95:Debug("Creating custom WoW95 map window...")
+    
+    -- Create the main window
+    local mapWindow = WoW95:CreateWindow(
+        "WoW95CustomMap", 
+        UIParent, 
+        1000, 
+        700, 
+        "Map & Quest Log - World of Warcraft"
+    )
+    
+    -- Position window
+    mapWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    
+    -- Set properties for taskbar recognition
+    mapWindow.programName = "World Map"
+    mapWindow.frameName = "WoW95CustomMap"
+    mapWindow.isWoW95Window = true
+    mapWindow.isProgramWindow = true
+    
+    -- Create main content area with Windows 95 styling
+    local contentArea = CreateFrame("Frame", nil, mapWindow, "BackdropTemplate")
+    contentArea:SetPoint("TOPLEFT", mapWindow, "TOPLEFT", 8, -30)
+    contentArea:SetPoint("BOTTOMRIGHT", mapWindow, "BOTTOMRIGHT", -8, 8)
+    contentArea:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    contentArea:SetBackdropColor(unpack(WoW95.colors.window))
+    contentArea:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create zone navigation toolbar - reuse working code
+    local zoneToolbar = self:CreateCustomZoneToolbar(contentArea)
+    
+    -- Create quest log panel (right side) - reuse working code  
+    local questPanel = self:CreateCustomQuestPanel(contentArea)
+    
+    -- Create map display area (left/center) - new custom implementation
+    local mapDisplay = self:CreateCustomMapDisplay(contentArea, questPanel)
+    
+    -- Store references
+    mapWindow.contentArea = contentArea
+    mapWindow.zoneToolbar = zoneToolbar
+    mapWindow.questPanel = questPanel
+    mapWindow.mapDisplay = mapDisplay
+    
+    -- Store reference globally
+    self.customMapWindow = mapWindow
+    
+    WoW95:Debug("Custom WoW95 map window created successfully")
+    return mapWindow
+end
+
+-- Create blue Windows 95 title bar
+function Windows:CreateCustomTitleBar(parent)
+    WoW95:Debug("Creating custom blue title bar...")
+    
+    local titleBar = CreateFrame("Frame", "WoW95CustomTitleBar", parent, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5)
+    titleBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -5, -5)
+    titleBar:SetHeight(25)
+    
+    -- Blue gradient background (Windows 95 style)
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    titleBar:SetBackdropColor(0.0, 0.0, 0.8, 1) -- Windows 95 blue
+    titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    
+    -- Title text
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+    titleText:SetText("Map & Quest Log")
+    titleText:SetTextColor(1, 1, 1, 1) -- White text
+    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    
+    return titleBar
+end
+
+-- Create custom zone toolbar (reusing working code)
+function Windows:CreateCustomZoneToolbar(parent)
+    WoW95:Debug("Creating custom zone toolbar...")
+    
+    local toolbar = CreateFrame("Frame", "WoW95CustomZoneToolbar", parent, "BackdropTemplate")
+    toolbar:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -5) -- At top
+    toolbar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -5, -5)
+    toolbar:SetHeight(35)
+    
+    -- Toolbar background
+    toolbar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    toolbar:SetBackdropColor(0.85, 0.85, 0.85, 1)
+    toolbar:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create zone navigation buttons (reuse existing working logic)
+    self:CreateCustomZoneButtons(toolbar)
+    
+    return toolbar
+end
+
+-- Create zone buttons with our working click handling
+function Windows:CreateCustomZoneButtons(toolbar)
+    -- Get current map info
+    local currentMapID = C_Map.GetBestMapForUnit("player") or 84
+    local mapInfo = C_Map.GetMapInfo(currentMapID)
+    
+    if not mapInfo then
+        WoW95:Debug("No map info available")
+        return
+    end
+    
+    -- Build zone hierarchy (simplified version of working code)
+    local zones = {}
+    
+    -- Add current zone
+    table.insert(zones, {name = mapInfo.name, mapID = currentMapID, isCurrent = true})
+    
+    -- Add parent zones
+    local parentMapID = mapInfo.parentMapID
+    while parentMapID and parentMapID ~= 0 do
+        local parentInfo = C_Map.GetMapInfo(parentMapID)
+        if parentInfo then
+            table.insert(zones, 1, {name = parentInfo.name, mapID = parentMapID, isCurrent = false})
+            parentMapID = parentInfo.parentMapID
+        else
+            break
+        end
+    end
+    
+    -- Create buttons
+    local xPos = 10
+    local buttonWidth = 100
+    local spacing = 5
+    
+    for i, zoneData in ipairs(zones) do
+        local btn = WoW95:CreateButton("CustomZoneBtn" .. i, toolbar, buttonWidth, 25, zoneData.name)
+        btn:SetPoint("LEFT", toolbar, "LEFT", xPos, 0)
+        
+        -- Style current zone differently
+        if zoneData.isCurrent then
+            btn:SetBackdropColor(0.3, 0.3, 0.8, 1)
+            btn:SetText("> " .. zoneData.name)
+        end
+        
+        -- Click handler with clean map switching (no positioning conflicts!)
+        btn:SetScript("OnClick", function()
+            WoW95:Debug("Custom zone button clicked: " .. zoneData.name .. " (MapID: " .. zoneData.mapID .. ")")
+            self:SwitchToZone(zoneData.mapID)
+        end)
+        
+        xPos = xPos + buttonWidth + spacing
+    end
+    
+    WoW95:Debug("Custom zone buttons created")
+end
+
+-- Clean zone switching without positioning conflicts
+function Windows:SwitchToZone(mapID)
+    WoW95:Debug("Switching to zone: " .. mapID)
+    
+    if self.customMapWindow and self.customMapWindow.mapDisplay then
+        -- Update our custom map display to show the new zone
+        self:UpdateCustomMapDisplay(self.customMapWindow.mapDisplay, mapID)
+        
+        -- Refresh zone buttons
+        self:RefreshCustomZoneButtons()
+    end
+end
+
+-- Create custom quest panel (reusing working quest log code)
+function Windows:CreateCustomQuestPanel(parent)
+    WoW95:Debug("Creating custom quest panel...")
+    
+    local questPanel = CreateFrame("Frame", "WoW95CustomQuestPanel", parent, "BackdropTemplate")
+    questPanel:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -5, -45) -- Below toolbar
+    questPanel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -5, 5)
+    questPanel:SetWidth(300)
+    
+    -- Quest panel background
+    questPanel:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    questPanel:SetBackdropColor(0.95, 0.95, 0.95, 1)
+    questPanel:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create quest tracker sections
+    self:CreateQuestTrackerSections(questPanel)
+    
+    return questPanel
+end
+
+-- Create quest tracker sections (simplified version of working code)
+function Windows:CreateQuestTrackerSections(questPanel)
+    WoW95:Debug("Creating quest tracker sections...")
+    
+    local yOffset = -10
+    
+    -- Campaign section
+    local campaignSection = self:CreateQuestSection(questPanel, "Campaign", yOffset)
+    yOffset = yOffset - 120
+    
+    -- Regular quests section  
+    local questsSection = self:CreateQuestSection(questPanel, "Quests", yOffset)
+    
+    -- Populate with actual quest data
+    self:PopulateQuestSections(campaignSection, questsSection)
+    
+    questPanel.campaignSection = campaignSection
+    questPanel.questsSection = questsSection
+end
+
+-- Create a quest section with title bar
+function Windows:CreateQuestSection(parent, title, yOffset)
+    local section = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    section:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, yOffset)
+    section:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, yOffset)
+    section:SetHeight(100)
+    
+    -- Section background
+    section:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 1,
+        insets = {left = 1, right = 1, top = 1, bottom = 1}
+    })
+    section:SetBackdropColor(0.9, 0.9, 0.9, 1)
+    section:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Title bar with Windows 95 blue styling
+    local titleBar = CreateFrame("Frame", nil, section, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", section, "TOPLEFT", 2, -2)
+    titleBar:SetPoint("TOPRIGHT", section, "TOPRIGHT", -2, -2)
+    titleBar:SetHeight(18)
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 8
+    })
+    titleBar:SetBackdropColor(0.0, 0.0, 0.8, 1) -- Windows 95 blue
+    
+    -- Title text
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
+    titleText:SetText(title)
+    titleText:SetTextColor(1, 1, 1, 1)
+    titleText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    
+    -- Content area
+    local content = CreateFrame("ScrollFrame", nil, section)
+    content:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 5, -5)
+    content:SetPoint("BOTTOMRIGHT", section, "BOTTOMRIGHT", -5, 5)
+    
+    local scrollChild = CreateFrame("Frame", nil, content)
+    scrollChild:SetSize(1, 1)
+    content:SetScrollChild(scrollChild)
+    
+    section.titleBar = titleBar
+    section.content = content
+    section.scrollChild = scrollChild
+    section.title = title
+    
+    return section
+end
+
+-- Populate quest sections with actual quest data
+function Windows:PopulateQuestSections(campaignSection, questsSection)
+    WoW95:Debug("Populating quest sections with all quest data...")
+    
+    -- Clear existing quest entries first
+    if campaignSection.scrollChild then
+        local children = {campaignSection.scrollChild:GetChildren()}
+        for i = 1, #children do
+            children[i]:Hide()
+        end
+    end
+    if questsSection.scrollChild then
+        local children = {questsSection.scrollChild:GetChildren()}
+        for i = 1, #children do
+            children[i]:Hide()
+        end
+    end
+    
+    local campaignYPos = 0
+    local questsYPos = 0
+    
+    -- Show ALL quests from quest log (not just tracked ones)
+    local numQuests = C_QuestLog.GetNumQuestLogEntries()
+    WoW95:Debug("Processing " .. numQuests .. " total quest log entries")
+    
+    for i = 1, numQuests do
+        local questInfo = C_QuestLog.GetInfo(i)
+        if questInfo and not questInfo.isHeader and not questInfo.isCollapsed then
+            WoW95:Debug("Processing quest: " .. (questInfo.title or "Unknown"))
+            
+            local isCampaign = questInfo.campaignID and questInfo.campaignID > 0
+            local targetSection = isCampaign and campaignSection or questsSection
+            local yPos = isCampaign and campaignYPos or questsYPos
+            
+            -- Create quest entry
+            local questFrame = CreateFrame("Frame", nil, targetSection.scrollChild)
+            questFrame:SetPoint("TOPLEFT", targetSection.scrollChild, "TOPLEFT", 0, -yPos)
+            questFrame:SetSize(260, 40) -- Increased height for quest objectives
+            
+            -- Quest title
+            local questText = questFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            questText:SetPoint("TOPLEFT", questFrame, "TOPLEFT", 5, -2)
+            questText:SetText("[" .. (questInfo.level or "?") .. "] " .. (questInfo.title or "Unknown Quest"))
+            questText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+            questText:SetTextColor(0, 0, 0, 1)
+            questText:SetJustifyH("LEFT")
+            questText:SetSize(250, 15)
+            
+            -- Add quest objectives
+            local objectives = C_QuestLog.GetQuestObjectives(questInfo.questID or i)
+            if objectives and #objectives > 0 then
+                local objText = questFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                objText:SetPoint("TOPLEFT", questText, "BOTTOMLEFT", 10, -2)
+                objText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
+                objText:SetTextColor(0.3, 0.3, 0.3, 1)
+                objText:SetJustifyH("LEFT")
+                objText:SetSize(240, 20)
+                
+                local objLine = objectives[1].text or "No objectives"
+                if objectives[1].numFulfilled and objectives[1].numRequired then
+                    objLine = objLine .. " (" .. objectives[1].numFulfilled .. "/" .. objectives[1].numRequired .. ")"
+                end
+                objText:SetText(objLine)
+            end
+            
+            if isCampaign then
+                campaignYPos = campaignYPos + 42
+            else
+                questsYPos = questsYPos + 42
+            end
+        end
+    end
+    
+    -- If no quests found, show a message
+    if campaignYPos == 0 and questsYPos == 0 then
+        local noQuestsText = questsSection.scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        noQuestsText:SetPoint("TOPLEFT", questsSection.scrollChild, "TOPLEFT", 5, -10)
+        noQuestsText:SetText("No quests found in quest log")
+        noQuestsText:SetTextColor(0.5, 0.5, 0.5, 1)
+        questsYPos = 30
+    end
+    
+    -- Update scroll child heights
+    campaignSection.scrollChild:SetHeight(math.max(campaignYPos, 20))
+    questsSection.scrollChild:SetHeight(math.max(questsYPos, 20))
+    
+    WoW95:Debug("Quest population complete. Campaign: " .. campaignYPos .. ", Quests: " .. questsYPos)
+end
+
+-- Create custom map display area
+function Windows:CreateCustomMapDisplay(parent, questPanel)
+    WoW95:Debug("Creating custom map display...")
+    
+    local mapDisplay = CreateFrame("Frame", "WoW95CustomMapDisplay", parent, "BackdropTemplate")
+    mapDisplay:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -75) -- Below title bar + toolbar
+    mapDisplay:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 5, 5)
+    mapDisplay:SetPoint("TOPRIGHT", questPanel, "TOPLEFT", -5, 0)
+    mapDisplay:SetPoint("BOTTOMRIGHT", questPanel, "BOTTOMLEFT", -5, 0)
+    
+    -- Map display background
+    mapDisplay:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 8,
+        edgeSize = 2,
+        insets = {left = 2, right = 2, top = 2, bottom = 2}
+    })
+    mapDisplay:SetBackdropColor(0.1, 0.1, 0.1, 1) -- Dark background for map
+    mapDisplay:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+    
+    -- Create container for actual map content
+    local mapContainer = CreateFrame("Frame", "WoW95CustomMapContainer", mapDisplay)
+    mapContainer:SetPoint("TOPLEFT", mapDisplay, "TOPLEFT", 5, -5)
+    mapContainer:SetPoint("BOTTOMRIGHT", mapDisplay, "BOTTOMRIGHT", -5, 5)
+    
+    -- Integrate the actual WorldMapFrame content into our container
+    self:EmbedWorldMapIntoContainer(mapContainer)
+    
+    mapDisplay.container = mapContainer
+    
+    return mapDisplay
+end
+
+-- Embed WorldMapFrame with proper zoom initialization
+function Windows:EmbedWorldMapIntoContainer(container)
+    WoW95:Debug("Embedding WorldMapFrame with proper zoom handling...")
+    
+    -- Ensure WorldMapFrame exists
+    if not WorldMapFrame then
+        WoW95:Debug("WorldMapFrame not available")
+        return
+    end
+    
+    -- Wait for WorldMapFrame to be fully loaded before embedding
+    local function EmbedWhenReady()
+        if not WorldMapFrame.ScrollContainer then
+            C_Timer.After(0.1, EmbedWhenReady)
+            return
+        end
+        
+        -- Store original settings
+        if not container.originalMapParent then
+            container.originalMapParent = WorldMapFrame:GetParent()
+            container.originalMapShown = WorldMapFrame:IsShown()
+        end
+        
+        -- Show WorldMapFrame first to ensure proper initialization
+        if not WorldMapFrame:IsShown() then
+            WorldMapFrame:Show()
+        end
+        
+        -- Wait a frame for initialization, then embed
+        C_Timer.After(0.1, function()
+            -- Now parent it to our container
+            WorldMapFrame:SetParent(container)
+            WorldMapFrame:ClearAllPoints()
+            WorldMapFrame:SetAllPoints(container)
+            WorldMapFrame:SetAlpha(1)
+            
+            -- Hide Blizzard UI elements we don't want
+            self:HideBlizzardMapElements()
+            
+            -- Ensure ScrollContainer is properly initialized
+            if WorldMapFrame.ScrollContainer then
+                local sc = WorldMapFrame.ScrollContainer
+                
+                -- Only initialize if values are actually nil
+                if sc.currentZoomLevel == nil then
+                    sc.currentZoomLevel = 1
+                end
+                if sc.targetZoomLevel == nil then
+                    sc.targetZoomLevel = 1
+                end
+                if sc.zoomTransitionPercent == nil then
+                    sc.zoomTransitionPercent = 0
+                end
+                
+                WoW95:Debug("ScrollContainer zoom state verified")
+            end
+            
+            -- Set initial map
+            local currentMapID = C_Map.GetBestMapForUnit("player") or 84
+            if WorldMapFrame.SetMapID then
+                pcall(function()
+                    WorldMapFrame:SetMapID(currentMapID)
+                end)
+            end
+            
+            container.hasMapContent = true
+            WoW95:Debug("WorldMapFrame embedded successfully")
+        end)
+    end
+    
+    -- Start the embedding process
+    EmbedWhenReady()
+end
+
+-- Hide unwanted Blizzard map elements
+function Windows:HideBlizzardMapElements()
+    -- Hide the quest log integration
+    if WorldMapFrame.QuestMapFrame then
+        WorldMapFrame.QuestMapFrame:Hide()
+    end
+    
+    -- Hide other UI elements
+    local elementsToHide = {
+        "BorderFrame",
+        "NavBar",
+        "SidePanelToggle"
+    }
+    
+    for _, elementName in ipairs(elementsToHide) do
+        local element = WorldMapFrame[elementName]
+        if element and element.Hide then
+            element:Hide()
+        end
+    end
+end
+
+-- Update map display for new zone
+function Windows:UpdateCustomMapDisplay(mapDisplay, mapID)
+    WoW95:Debug("Updating custom map display for zone: " .. mapID)
+    
+    -- Update the embedded WorldMapFrame to show the new zone with error protection
+    if WorldMapFrame and WorldMapFrame.SetMapID then
+        pcall(function()
+            WorldMapFrame:SetMapID(mapID)
+        end)
+    end
+    
+    -- Clear any waypoints
+    if C_Map and C_Map.ClearUserWaypoint then
+        pcall(function()
+            C_Map.ClearUserWaypoint()
+        end)
+    end
+    
+    WoW95:Debug("Map updated to zone: " .. mapID)
+end
+
+-- Refresh zone buttons
+function Windows:RefreshCustomZoneButtons()
+    WoW95:Debug("Refreshing custom zone buttons...")
+    -- TODO: Implement zone button refresh logic
+end
+
+-- Refresh quest data for any open map window
+function Windows:RefreshQuestData()
+    -- Check for custom map window first (legacy)
+    if self.customMapWindow and self.customMapWindow.questPanel then
+        local questPanel = self.customMapWindow.questPanel
+        if questPanel.campaignSection and questPanel.questsSection then
+            self:PopulateQuestSections(questPanel.campaignSection, questPanel.questsSection)
+            WoW95:Debug("Quest data refreshed (custom window)")
+        end
+    end
+    
+    -- Check for program windows
+    for frameName, window in pairs(self.programWindows) do
+        if window.questPanel and window.questPanel.campaignSection and window.questPanel.questsSection then
+            self:PopulateQuestSections(window.questPanel.campaignSection, window.questPanel.questsSection)
+            WoW95:Debug("Quest data refreshed (program window)")
+        end
+    end
+end
+
+-- Show the custom map window
+function Windows:ShowCustomMap()
+    if not self.customMapWindow then
+        self:CreateCustomMapWindow()
+    end
+    
+    self.customMapWindow:Show()
+    
+    -- Refresh quest data when window is shown
+    C_Timer.After(0.1, function()
+        self:RefreshQuestData()
+    end)
+    
+    WoW95:Debug("Custom map window shown")
+end
+
+-- Add slash command to open the World Map program
+SLASH_WOW95MAP1 = "/wow95map"
+SlashCmdList["WOW95MAP"] = function(msg)
+    print("WoW95 Map command triggered!")
+    
+    if not Windows then
+        print("ERROR: Windows module not found")
+        return
+    end
+    
+    print("Windows module found")
+    
+    if not WorldMapFrame then
+        print("ERROR: WorldMapFrame not found")
+        return
+    end
+    
+    print("WorldMapFrame found, attempting to show...")
+    
+    if not WorldMapFrame:IsShown() then
+        WorldMapFrame:Show()
+        print("WorldMapFrame:Show() called")
+    else
+        print("WorldMapFrame already shown")
+    end
+end
+
+print("WoW95 Map slash command registered")
+
+-- Test command to manually open a program window
+function Windows:TestOpenWindow(frameName)
+    local program = self.PROGRAMS[frameName]
+    if not program then
+        WoW95:Print("Program not found: " .. frameName)
+        return
+    end
+    
+    WoW95:Print("Manually creating window for: " .. frameName)
+    
+    -- Check if Blizzard frame exists
+    local blizzFrame = _G[frameName]
+    if blizzFrame then
+        WoW95:Print("Blizzard frame exists, showing it...")
+        blizzFrame:Show()
+    else
+        WoW95:Print("Blizzard frame doesn't exist, creating custom window...")
+        self:CreateProgramWindow(frameName, program)
+    end
+end
+
+-- Slash command for testing
+SLASH_WOW95TEST1 = "/wow95test"
+SlashCmdList["WOW95TEST"] = function(msg)
+    if msg == "" then
+        WoW95:Print("Usage: /wow95test <framename>")
+        WoW95:Print("Available frames:")
+        for frameName, program in pairs(Windows.PROGRAMS) do
+            WoW95:Print("  " .. frameName .. " - " .. program.name)
+        end
+    else
+        Windows:TestOpenWindow(msg)
+    end
+end
+
+-- Command to show custom window directly
+SLASH_WOW95WIN1 = "/wow95win"
+SlashCmdList["WOW95WIN"] = function(msg)
+    if msg == "" then
+        WoW95:Print("Usage: /wow95win <framename>")
+        return
+    end
+    
+    local program = Windows.PROGRAMS[msg]
+    if program then
+        WoW95:Print("Creating custom window for: " .. program.name)
+        Windows:CreateProgramWindow(msg, program)
+    else
+        WoW95:Print("Unknown frame: " .. msg)
+    end
+end
+
+-- Register the module
+WoW95:RegisterModule("Windows", Windows)

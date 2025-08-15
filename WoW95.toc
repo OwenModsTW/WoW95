@@ -1,0 +1,39 @@
+## Interface: 110200
+## Title: |cFF00AAFFWoW95|r - Windows 95 UI
+## Notes: Complete Windows 95 themed UI overhaul for World of Warcraft
+## Author: YourName
+## Version: 1.0.0
+## SavedVariables: WoW95DB
+## DefaultState: enabled
+## IconTexture: Interface\Icons\inv_misc_pocketwatch_02
+
+## X-Category: Interface Enhancements
+## X-Website: 
+## X-Curse-Project-ID: 
+## X-Wago-ID: 
+## X-WoWI-ID: 
+
+# Core Files
+WoW95.lua
+
+# Module Files (will be added as we create them)
+Modules\Taskbar.lua
+Modules\StartMenu.lua
+Modules\ActionBars.lua
+# Modules\Chat.lua
+# Modules\Minimap.lua
+Modules\Bags.lua
+Modules\MicroMenu.lua
+Modules\QuestTracker.lua
+Modules\Spellbook.lua
+Modules\Tooltip.lua
+# Modules\TimeDate.lua
+Modules\Windows.lua
+Modules\Games.lua
+
+# Localization Files (optional for future)
+# Locales\enUS.lua
+# Locales\deDE.lua
+# Locales\frFR.lua
+# Locales\esES.lua
+# Locales\zhCN.lua
