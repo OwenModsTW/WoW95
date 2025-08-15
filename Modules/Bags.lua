@@ -201,6 +201,7 @@ function Bags:CreateBagFrame()
     closeText:SetPoint("CENTER")
     closeText:SetText("×")
     closeText:SetTextColor(0, 0, 0, 1)
+    closeText:SetShadowOffset(0, 0)
     closeText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
     closeButton:SetScript("OnClick", function()
@@ -239,6 +240,7 @@ function Bags:CreateBagFrame()
     lockText:SetPoint("CENTER")
     lockText:SetText("🔓") -- Unlocked by default
     lockText:SetTextColor(0, 0, 0, 1)
+    lockText:SetShadowOffset(0, 0)
     lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
     lockButton:SetScript("OnClick", function()

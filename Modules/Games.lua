@@ -125,6 +125,7 @@ function Games:CreateMinesweeperToolbar(gameWindow, board)
     mineCountLabel:SetPoint("LEFT", toolbar, "LEFT", 12, 0)
     mineCountLabel:SetText("Mines: " .. board.mines)
     mineCountLabel:SetTextColor(0, 0, 0, 1)
+    mineCountLabel:SetShadowOffset(0, 0)
     mineCountLabel:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
     gameWindow.mineCountLabel = mineCountLabel
     
@@ -143,6 +144,7 @@ function Games:CreateMinesweeperToolbar(gameWindow, board)
     timerLabel:SetPoint("RIGHT", toolbar, "RIGHT", -12, 0)
     timerLabel:SetText("Time: 0")
     timerLabel:SetTextColor(0, 0, 0, 1)
+    timerLabel:SetShadowOffset(0, 0)
     timerLabel:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
     gameWindow.timerLabel = timerLabel
     gameWindow.startTime = nil

@@ -333,6 +333,7 @@ function Windows:CreateCharacterInfoWindow(frameName, program)
         tabText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
         tabText:SetText(tabData.name)
         tabText:SetTextColor(0, 0, 0, 1)
+        tabText:SetShadowOffset(0, 0)
         
         -- Tab click handler
         tab:SetScript("OnClick", function()
@@ -616,6 +617,7 @@ function Windows:CreateEquipmentSlots(programWindow, parent)
         slotLabel:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
         slotLabel:SetText(slotData.name)
         slotLabel:SetTextColor(0, 0, 0, 1)
+        slotLabel:SetShadowOffset(0, 0)
         slotLabel:SetShadowColor(0, 0, 0, 0) -- Remove drop shadow
         
         -- Item level text (if item equipped)
@@ -761,6 +763,7 @@ function Windows:CreateStatsPanel(parent)
     statsTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     statsTitle:SetText("Character Stats")
     statsTitle:SetTextColor(0, 0, 0, 1)
+    statsTitle:SetShadowOffset(0, 0)
     statsTitle:SetShadowColor(0, 0, 0, 0) -- Remove drop shadow
     
     -- Get player stats
@@ -916,6 +919,7 @@ function Windows:CreateReputationTab(programWindow)
                 expandIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
                 expandIcon:SetText(isCollapsed and "+" or "-")
                 expandIcon:SetTextColor(0, 0, 0, 1)
+                expandIcon:SetShadowOffset(0, 0)
                 expandIcon:SetShadowColor(0, 0, 0, 0)
                 
                 -- Header name
@@ -977,6 +981,7 @@ function Windows:CreateReputationTab(programWindow)
                 factionName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
                 factionName:SetText(name)
                 factionName:SetTextColor(0, 0, 0, 1)
+                factionName:SetShadowOffset(0, 0)
                 factionName:SetShadowColor(0, 0, 0, 0)
                 factionName:SetJustifyH("LEFT")
                 
@@ -1185,6 +1190,7 @@ function Windows:CreateCurrencyTab(programWindow)
         goldName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
         goldName:SetText("Gold")
         goldName:SetTextColor(0, 0, 0, 1)
+        goldName:SetShadowOffset(0, 0)
         goldName:SetShadowColor(0, 0, 0, 0)
         
         -- Gold amount
@@ -1235,6 +1241,7 @@ function Windows:CreateCurrencyTab(programWindow)
             currencyName:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
             currencyName:SetText(currencyInfo.name or "Unknown")
             currencyName:SetTextColor(0, 0, 0, 1)
+            currencyName:SetShadowOffset(0, 0)
             currencyName:SetShadowColor(0, 0, 0, 0)
             
             -- Check if currency is transferable
@@ -1313,6 +1320,8 @@ function Windows:CreateCurrencyTab(programWindow)
                 buttonText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
                 buttonText:SetText("Transfer")
                 buttonText:SetTextColor(0, 0, 0, 1)
+    buttonText:SetShadowOffset(0, 0)
+                buttonText:SetShadowOffset(0, 0)
                 buttonText:SetShadowColor(0, 0, 0, 0)
                 
                 -- Make sure it's mouse enabled and on top
@@ -1609,6 +1618,7 @@ function Windows:CreateZoneSelection(mapWindow)
     zoneTitle:SetPoint("TOP", zonePanel, "TOP", 0, -8)
     zoneTitle:SetText("Zone Navigation")
     zoneTitle:SetTextColor(0, 0, 0, 1)
+    zoneTitle:SetShadowOffset(0, 0)
     zoneTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     zoneTitle:SetShadowColor(0, 0, 0, 0)
     
@@ -1740,6 +1750,7 @@ function Windows:CreateMapFilters(mapWindow)
     filtersTitle:SetPoint("TOP", filtersPanel, "TOP", 0, -8)
     filtersTitle:SetText("Map Filters")
     filtersTitle:SetTextColor(0, 0, 0, 1)
+    filtersTitle:SetShadowOffset(0, 0)
     filtersTitle:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     filtersTitle:SetShadowColor(0, 0, 0, 0)
     
@@ -1770,6 +1781,7 @@ function Windows:CreateMapFilters(mapWindow)
         label:SetPoint("LEFT", checkbox, "RIGHT", 5, 0)
         label:SetText(filter.name)
         label:SetTextColor(0, 0, 0, 1)
+        label:SetShadowOffset(0, 0)
         label:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
         label:SetShadowColor(0, 0, 0, 0)
         
@@ -1807,6 +1819,7 @@ function Windows:CreateCoordinateDisplay(mapWindow)
     coordText:SetPoint("LEFT", coordBar, "LEFT", 5, 0)
     coordText:SetText("Coordinates: 50.0, 50.0")
     coordText:SetTextColor(0, 0, 0, 1)
+    coordText:SetShadowOffset(0, 0)
     coordText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
     coordText:SetShadowColor(0, 0, 0, 0)
     
@@ -1815,6 +1828,7 @@ function Windows:CreateCoordinateDisplay(mapWindow)
     zoneInfo:SetPoint("RIGHT", coordBar, "RIGHT", -5, 0)
     zoneInfo:SetText("Stormwind City - Eastern Kingdoms")
     zoneInfo:SetTextColor(0, 0, 0, 1)
+    zoneInfo:SetShadowOffset(0, 0)
     zoneInfo:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
     zoneInfo:SetShadowColor(0, 0, 0, 0)
     
@@ -3121,6 +3135,7 @@ function Windows:PopulateQuestLogOLD(scrollChild)
                 expandIcon:SetText(info.isCollapsed and "[+]" or "[-]")
                 expandIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
                 expandIcon:SetTextColor(0, 0, 0, 1)
+                expandIcon:SetShadowOffset(0, 0)
                 
                 -- Zone name text (we'll count quests as we add them)
                 local zoneText = zoneFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -3403,6 +3418,7 @@ function Windows:CreateQuestDetailsWindow(questID, questFrame)
         descText:SetText(description)
         descText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
         descText:SetTextColor(0, 0, 0, 1)
+        descText:SetShadowOffset(0, 0)
         
         yPos = yPos - (descText:GetStringHeight() + 15)
     end
@@ -3887,6 +3903,7 @@ function Windows:ApplyWindows95PanelStyle(panel)
             -- Style text to remove shadows
             region:SetShadowColor(0, 0, 0, 0)
             region:SetTextColor(0, 0, 0, 1) -- Black text for panels
+            region:SetShadowOffset(0, 0)
         end
     end
     
@@ -4163,6 +4180,7 @@ function Windows:ApplyWindows95EditBoxStyle(editBox)
     -- Style the text
     editBox:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     editBox:SetTextColor(0, 0, 0, 1) -- Black text
+    editBox:SetShadowOffset(0, 0)
     editBox:SetShadowColor(0, 0, 0, 0) -- No shadow
     
     editBox.wow95styled = true
@@ -4193,6 +4211,7 @@ function Windows:CreateAchievementsSummary(achievementsWindow)
     pointsLabel:SetPoint("TOPLEFT", summaryFrame, "TOPLEFT", 10, -10)
     pointsLabel:SetText("Achievement Points:")
     pointsLabel:SetTextColor(0, 0, 0, 1)
+    pointsLabel:SetShadowOffset(0, 0)
     
     local totalPoints = GetTotalAchievementPoints()
     local pointsValue = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -4236,6 +4255,7 @@ function Windows:CreateCategoriesPanel(achievementsWindow)
     categoryTitle:SetPoint("TOP", categoryPanel, "TOP", 0, -8)
     categoryTitle:SetText("Categories")
     categoryTitle:SetTextColor(0, 0, 0, 1)
+    categoryTitle:SetShadowOffset(0, 0)
     categoryTitle:SetShadowColor(0, 0, 0, 0)
     
     -- Create simple scrollable category list without template
@@ -4310,6 +4330,7 @@ function Windows:CreateAchievementsPanel(achievementsWindow)
     searchLabel:SetPoint("LEFT", searchFrame, "LEFT", 5, 0)
     searchLabel:SetText("Search:")
     searchLabel:SetTextColor(0, 0, 0, 1)
+    searchLabel:SetShadowOffset(0, 0)
     
     -- Search edit box
     local searchBox = CreateFrame("EditBox", "WoW95AchievementSearchBox", searchFrame, "BackdropTemplate")
@@ -4319,6 +4340,7 @@ function Windows:CreateAchievementsPanel(achievementsWindow)
     searchBox:SetAutoFocus(false)
     searchBox:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     searchBox:SetTextColor(0, 0, 0, 1)
+    searchBox:SetShadowOffset(0, 0)
     searchBox:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8X8",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -4343,6 +4365,7 @@ function Windows:CreateAchievementsPanel(achievementsWindow)
     categoryTitle:SetPoint("TOPLEFT", searchFrame, "BOTTOMLEFT", 0, -10)
     categoryTitle:SetText("Select a category")
     categoryTitle:SetTextColor(0, 0, 0, 1)
+    categoryTitle:SetShadowOffset(0, 0)
     
     -- Create scrollable achievement list
     local achievementScroll = CreateFrame("ScrollFrame", "WoW95AchievementScroll", achievementPanel, "UIPanelScrollFrameTemplate")
@@ -4523,6 +4546,7 @@ function Windows:CreateCategoryButton(achievementsWindow, categoryID, categoryNa
     buttonText:SetPoint("CENTER", button, "CENTER", 0, 0)
     buttonText:SetText(categoryName)
     buttonText:SetTextColor(0, 0, 0, 1)
+    buttonText:SetShadowOffset(0, 0)
     buttonText:SetShadowColor(0, 0, 0, 0)
     button.text = buttonText
     
@@ -4640,6 +4664,7 @@ function Windows:ApplyCategoryButtonStyling(button)
         -- Ensure text is black for subcategories
         if button.text then
             button.text:SetTextColor(0, 0, 0, 1) -- Black text
+            button.text:SetShadowOffset(0, 0)
             button.text:SetShadowColor(0, 0, 0, 0) -- No shadow
         end
         
@@ -4868,6 +4893,7 @@ function Windows:CreateAchievementButton(achievementsWindow, achievementID, name
     nameText:SetJustifyH("LEFT")
     nameText:SetText(name)
     nameText:SetTextColor(0, 0, 0, 1)
+    nameText:SetShadowOffset(0, 0)
     nameText:SetShadowColor(0, 0, 0, 0)
     
     -- Achievement points
@@ -5002,6 +5028,7 @@ function Windows:CreateProgramWindow(frameName, program)
         menuItem:SetText(menuName)
         menuItem:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
         menuItem:SetTextColor(0, 0, 0, 1)
+        menuItem:SetShadowOffset(0, 0)
         menuX = menuX + menuItem:GetStringWidth() + 16
     end
     
@@ -5026,6 +5053,7 @@ function Windows:CreateProgramWindow(frameName, program)
     contentText:SetText("This program is currently running.\n\nOriginal " .. program.name .. " window\nis hidden behind this interface.")
     contentText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     contentText:SetTextColor(0, 0, 0, 1)
+    contentText:SetShadowOffset(0, 0)
     contentText:SetJustifyH("CENTER")
     
     -- CRITICAL: Set properties for taskbar recognition
@@ -5426,6 +5454,7 @@ function Windows:CreateQuestLogWindow(frameName, program)
     questDescription:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     questDescription:SetText("")
     questDescription:SetTextColor(0, 0, 0, 1)
+    questDescription:SetShadowOffset(0, 0)
     questDescription:SetJustifyH("LEFT")
     questDescription:SetJustifyV("TOP")
     
@@ -5846,6 +5875,7 @@ function Windows:PopulateQuestSections(campaignSection, questsSection)
             questText:SetText("[" .. (questInfo.level or "?") .. "] " .. (questInfo.title or "Unknown Quest"))
             questText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
             questText:SetTextColor(0, 0, 0, 1)
+            questText:SetShadowOffset(0, 0)
             questText:SetJustifyH("LEFT")
             questText:SetSize(250, 15)
             

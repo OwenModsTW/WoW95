@@ -540,6 +540,7 @@ function ActionBars:CreatePageSwitcher()
     lockIcon:SetPoint("CENTER")
     lockIcon:SetText("🔓") -- Unlocked by default
     lockIcon:SetTextColor(0, 0, 0, 1)
+    lockIcon:SetShadowOffset(0, 0)
     lockIcon:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
     lockButton:SetScript("OnClick", function()

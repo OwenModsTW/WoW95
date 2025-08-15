@@ -212,6 +212,8 @@ function StartMenu:CreateMenuItems()
             text:SetPoint("LEFT", button, "LEFT", item.icon and 30 or 8, 0)
             text:SetText(item.text)
             text:SetTextColor(0, 0, 0, 1)
+        text:SetShadowOffset(0, 0)
+            text:SetShadowOffset(0, 0)
             text:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
             
             -- Submenu arrow
@@ -220,6 +222,7 @@ function StartMenu:CreateMenuItems()
                 arrow:SetPoint("RIGHT", button, "RIGHT", -8, 0)
                 arrow:SetText("►")
                 arrow:SetTextColor(0, 0, 0, 1)
+                arrow:SetShadowOffset(0, 0)
                 arrow:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
             end
             
@@ -246,6 +249,9 @@ function StartMenu:CreateMenuItems()
             button:SetScript("OnLeave", function()
                 button:SetBackdropColor(0, 0, 0, 0)
                 text:SetTextColor(0, 0, 0, 1)
+                text:SetShadowOffset(0, 0)
+        text:SetShadowOffset(0, 0)
+            text:SetShadowOffset(0, 0)
             end)
             
             yOffset = yOffset - MENU_ITEM_HEIGHT
@@ -299,6 +305,7 @@ function StartMenu:ShowSubmenu(submenuItems, parentButton)
         text:SetPoint("LEFT", button, "LEFT", 8, 0)
         text:SetText(subitem.text)
         text:SetTextColor(0, 0, 0, 1)
+        text:SetShadowOffset(0, 0)
         text:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
         
         -- Button functionality
@@ -317,6 +324,8 @@ function StartMenu:ShowSubmenu(submenuItems, parentButton)
         button:SetScript("OnLeave", function()
             button:SetBackdropColor(0, 0, 0, 0)
             text:SetTextColor(0, 0, 0, 1)
+        text:SetShadowOffset(0, 0)
+            text:SetShadowOffset(0, 0)
         end)
     end
     
@@ -432,6 +441,7 @@ function StartMenu:ShowRunDialog()
     instructions:SetPoint("TOP", dialog, "TOP", 0, -20)
     instructions:SetText("Type the name of a program, folder, or command:")
     instructions:SetTextColor(0, 0, 0, 1)
+    instructions:SetShadowOffset(0, 0)
     
     -- Input box
     local inputBox = CreateFrame("EditBox", "WoW95RunInput", dialog, "InputBoxTemplate")
@@ -476,6 +486,7 @@ function StartMenu:ShowAbout()
     aboutText:SetPoint("CENTER", aboutWindow, "CENTER", 0, 0)
     aboutText:SetText("WoW95 - Windows 95 UI for World of Warcraft\n\nVersion: " .. WoW95.version .. "\n\nBringing back the nostalgia of 1995!")
     aboutText:SetTextColor(0, 0, 0, 1)
+    aboutText:SetShadowOffset(0, 0)
     aboutText:SetJustifyH("CENTER")
     
     aboutWindow:Show()

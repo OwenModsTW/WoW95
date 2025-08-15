@@ -277,6 +277,7 @@ function Chat:CreateChatFrame(name, channels, x, y, isMainFrame)
     chatText:SetJustifyV("TOP")
     chatText:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
     chatText:SetTextColor(0, 0, 0, 1)
+    chatText:SetShadowOffset(0, 0)
     chatText:SetText("")
     
     -- Create input box
@@ -286,6 +287,7 @@ function Chat:CreateChatFrame(name, channels, x, y, isMainFrame)
     inputBox:SetPoint("BOTTOMRIGHT", chatWindow, "BOTTOMRIGHT", -8, 4)
     inputBox:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     inputBox:SetTextColor(0, 0, 0, 1)
+    inputBox:SetShadowOffset(0, 0)
     inputBox:SetAutoFocus(false)
     
     -- Input box styling
@@ -329,6 +331,7 @@ function Chat:CreateChatFrame(name, channels, x, y, isMainFrame)
     lockText:SetPoint("CENTER")
     lockText:SetText("🔓")
     lockText:SetTextColor(0, 0, 0, 1)
+    lockText:SetShadowOffset(0, 0)
     lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
     -- Create minimize button
@@ -351,6 +354,7 @@ function Chat:CreateChatFrame(name, channels, x, y, isMainFrame)
     minimizeText:SetPoint("CENTER")
     minimizeText:SetText("_")
     minimizeText:SetTextColor(0, 0, 0, 1)
+    minimizeText:SetShadowOffset(0, 0)
     minimizeText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
     -- Create new tab button
@@ -655,6 +659,7 @@ function Chat:ShowNewTabDialog(frameData)
     nameLabel:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 15, -25)
     nameLabel:SetText("Tab Name:")
     nameLabel:SetTextColor(0, 0, 0, 1)
+    nameLabel:SetShadowOffset(0, 0)
     
     local nameInput = CreateFrame("EditBox", "NewTabNameInput", dialog, "InputBoxTemplate")
     nameInput:SetSize(150, 20)
@@ -823,6 +828,7 @@ function Chat:ShowRenameTabDialog(frameData, tabData)
     nameLabel:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 15, -25)
     nameLabel:SetText("New Name:")
     nameLabel:SetTextColor(0, 0, 0, 1)
+    nameLabel:SetShadowOffset(0, 0)
     
     local nameInput = CreateFrame("EditBox", "RenameTabInput", dialog, "InputBoxTemplate")
     nameInput:SetSize(150, 20)
@@ -929,6 +935,7 @@ function Chat:ShowChannelConfigDialog(frameData, tabData)
         label:SetPoint("LEFT", checkbox, "RIGHT", 8, 0) -- More space between checkbox and text
         label:SetText(channel)
         label:SetTextColor(0, 0, 0, 1)
+        label:SetShadowOffset(0, 0)
         label:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
         
         -- Check if channel is currently enabled
@@ -1023,6 +1030,7 @@ function Chat:ToggleLockFrame(frameData)
             lockText:SetPoint("CENTER")
             lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
             lockText:SetTextColor(0, 0, 0, 1)
+    lockText:SetShadowOffset(0, 0)
             frameData.lockButton.lockText = lockText
         end
         

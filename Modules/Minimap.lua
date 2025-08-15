@@ -119,6 +119,7 @@ function Minimap:CreateMinimapFrame()
     lockText:SetPoint("CENTER")
     lockText:SetText("🔓") -- Unlocked by default
     lockText:SetTextColor(0, 0, 0, 1)
+    lockText:SetShadowOffset(0, 0)
     lockText:SetFont("Fonts\\FRIZQT__.TTF", 8, "")
     
     lockButton:SetScript("OnClick", function()
@@ -380,6 +381,7 @@ function Minimap:CreateMinimapControls()
     zoomInText:SetPoint("CENTER")
     zoomInText:SetText("+")
     zoomInText:SetTextColor(0, 0, 0, 1)
+    zoomInText:SetShadowOffset(0, 0)
     zoomInText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
     
     zoomInButton:SetScript("OnClick", function()
@@ -421,6 +423,7 @@ function Minimap:CreateMinimapControls()
     zoomOutText:SetPoint("CENTER")
     zoomOutText:SetText("-")
     zoomOutText:SetTextColor(0, 0, 0, 1)
+    zoomOutText:SetShadowOffset(0, 0)
     zoomOutText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
     
     zoomOutButton:SetScript("OnClick", function()

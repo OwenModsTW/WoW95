@@ -1146,6 +1146,7 @@ function QuestTracker:ShowQuestContextMenu(questID, questTitle, parentFrame)
     untrackText:SetPoint("LEFT", untrackButton, "LEFT", 6, 0)
     untrackText:SetText(isTracked and "Untrack Quest" or "Track Quest")
     untrackText:SetTextColor(0, 0, 0, 1)
+    untrackText:SetShadowOffset(0, 0)
     untrackText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
     untrackButton:SetScript("OnClick", function()
@@ -1218,6 +1219,7 @@ function QuestTracker:ShowQuestContextMenu(questID, questTitle, parentFrame)
     untrackButton:SetScript("OnLeave", function()
         untrackButton:SetBackdropColor(0, 0, 0, 0)
         untrackText:SetTextColor(0, 0, 0, 1)
+    untrackText:SetShadowOffset(0, 0)
     end)
     
     -- Details option
@@ -1236,6 +1238,7 @@ function QuestTracker:ShowQuestContextMenu(questID, questTitle, parentFrame)
     detailsText:SetPoint("LEFT", detailsButton, "LEFT", 6, 0)
     detailsText:SetText("View in Quest Log")
     detailsText:SetTextColor(0, 0, 0, 1)
+    detailsText:SetShadowOffset(0, 0)
     detailsText:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     
     detailsButton:SetScript("OnClick", function()
@@ -1264,6 +1267,7 @@ function QuestTracker:ShowQuestContextMenu(questID, questTitle, parentFrame)
     detailsButton:SetScript("OnLeave", function()
         detailsButton:SetBackdropColor(0, 0, 0, 0)
         detailsText:SetTextColor(0, 0, 0, 1)
+    detailsText:SetShadowOffset(0, 0)
     end)
     
     -- Close menu when clicking elsewhere

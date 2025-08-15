@@ -1,7 +1,7 @@
 # WoW95 - Windows 95 UI Overhaul for World of Warcraft
 
 ![WoW Version](https://img.shields.io/badge/WoW-11.0.2-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-red)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Mac-lightgrey)
 ![Addon](https://img.shields.io/badge/addon-UI%20Overhaul-purple)
 
@@ -88,7 +88,9 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License - see the [LICENSE](LICENSE) file for details.
+
+**Note**: This addon is free for personal use but cannot be sold or used commercially. Any modifications must be shared under the same license.
 
 ## 🙏 Acknowledgments
 
