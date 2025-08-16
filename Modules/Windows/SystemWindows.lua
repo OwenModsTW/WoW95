@@ -8,7 +8,7 @@ WoW95.SystemWindows = SystemWindows
 
 -- Supported system frames
 local SYSTEM_FRAMES = {
-    ["GameMenuFrame"] = "CreateGameMenuWindow",
+    -- ["GameMenuFrame"] = "CreateGameMenuWindow",  -- DISABLED - Keep vanilla game menu for logout/exit
     ["InterfaceOptionsFrame"] = "CreateInterfaceOptionsWindow",
     ["EncounterJournal"] = "CreateEncounterJournalWindow"
 }

@@ -39,7 +39,8 @@ WoW95.textures = {
     maximize = "Interface\\AddOns\\WoW95\\Media\\maximise",
     startButton = "Interface\\AddOns\\WoW95\\Media\\startbutton",
     lock = "Interface\\AddOns\\WoW95\\Media\\lock",
-    add = "Interface\\AddOns\\WoW95\\Media\\add"
+    add = "Interface\\AddOns\\WoW95\\Media\\add",
+    arrow = "Interface\\AddOns\\WoW95\\Media\\arrow"
 }
 
 -- Core utility functions
@@ -417,6 +418,322 @@ function WoW95:InitializeUI()
     
     -- UI components are now initialized by their respective modules
     -- No test window needed
+end
+
+-- Slash commands
+SLASH_WOW95PARTYTEST1 = "/partytest"
+SLASH_WOW95PARTYTEST2 = "/wow95partytest"
+SlashCmdList["WOW95PARTYTEST"] = function(msg)
+    local command = string.lower(msg or "")
+    
+    -- Debug what we have
+    print("Debug: WoW95 exists:", WoW95 ~= nil)
+    if WoW95 then
+        print("Debug: WoW95.PartyRaid exists:", WoW95.PartyRaid ~= nil)
+        print("Debug: WoW95.PartyRaidTest exists:", WoW95.PartyRaidTest ~= nil)
+        print("Debug: Available modules:")
+        for name, module in pairs(WoW95.modules or {}) do
+            print("  -", name, type(module))
+        end
+    end
+    
+    if not WoW95 then
+        print("WoW95 not loaded!")
+        return
+    end
+    
+    -- Direct party test implementation
+    if command == "on" or command == "" then
+        print("Creating test party window...")
+        
+        -- Create realistic party window with example players
+        if not _G.WoW95TestPartyWindow then
+            -- Create main party window container (no background)
+            local testWindow = CreateFrame("Frame", "WoW95TestPartyWindow", UIParent)
+            testWindow:SetSize(200, 250)
+            testWindow:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 10, -120)
+            
+            -- Example party members with realistic data
+            local partyMembers = {
+                {name = UnitName("player") or "You", class = "PLAYER", health = 100, maxHealth = 100, power = 85, maxPower = 100, role = "TANK"},
+                {name = "Shadowmend", class = "PRIEST", health = 65, maxHealth = 90, power = 40, maxPower = 100, role = "HEALER"},
+                {name = "Frostboltz", class = "MAGE", health = 30, maxHealth = 75, power = 20, maxPower = 95, role = "DAMAGER"},
+                {name = "Backstabby", class = "ROGUE", health = 95, maxHealth = 80, power = 60, maxPower = 100, role = "DAMAGER"}
+            }
+            
+            -- Class colors matching WoW
+            local classColors = {
+                PLAYER = {0.78, 0.61, 0.43}, -- Assuming player is a Paladin
+                PRIEST = {1.0, 1.0, 1.0},
+                MAGE = {0.25, 0.78, 0.92},
+                ROGUE = {1.0, 0.96, 0.41}
+            }
+            
+            for i, memberData in ipairs(partyMembers) do
+                -- Create member frame with secure template for mouseover casting
+                local memberFrame = CreateFrame("Button", "WoW95TestMember" .. i, testWindow, "SecureUnitButtonTemplate")
+                memberFrame:SetSize(190, 40)
+                memberFrame:SetPoint("TOPLEFT", testWindow, "TOPLEFT", 0, -(i-1) * 45)
+                
+                -- Set up secure attributes for mouseover casting
+                local unitId = (i == 1) and "player" or ("party" .. (i-1))
+                memberFrame:SetAttribute("unit", unitId)
+                memberFrame:SetAttribute("type1", "target") -- Left click to target
+                memberFrame:SetAttribute("type2", "togglemenu") -- Right click for menu
+                
+                -- Enable mouseover casting - spells will automatically work
+                memberFrame:EnableMouse(true)
+                memberFrame:RegisterForClicks("AnyUp")
+                
+                -- Add mouseover highlight
+                memberFrame:SetScript("OnEnter", function(self)
+                    print("Mouseover: " .. memberData.name .. " (Unit: " .. unitId .. ") - Ready for spell casting!")
+                end)
+                memberFrame:SetScript("OnLeave", function(self)
+                    -- Could add highlight removal here
+                end)
+                
+                -- Name text with class color
+                local nameText = memberFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                nameText:SetPoint("TOPLEFT", memberFrame, "TOPLEFT", 2, -2)
+                nameText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+                local classColor = classColors[memberData.class]
+                nameText:SetTextColor(classColor[1], classColor[2], classColor[3], 1)
+                nameText:SetText(memberData.name)
+                
+                -- Health bar
+                local healthBar = CreateFrame("StatusBar", nil, memberFrame)
+                healthBar:SetSize(180, 12)
+                healthBar:SetPoint("TOPLEFT", memberFrame, "TOPLEFT", 2, -16)
+                healthBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+                
+                -- Health bar color based on percentage
+                local healthPercent = memberData.health / memberData.maxHealth
+                if healthPercent > 0.6 then
+                    healthBar:SetStatusBarColor(0, 0.8, 0, 1) -- Green
+                elseif healthPercent > 0.3 then
+                    healthBar:SetStatusBarColor(1, 1, 0, 1) -- Yellow
+                else
+                    healthBar:SetStatusBarColor(1, 0, 0, 1) -- Red
+                end
+                
+                healthBar:SetMinMaxValues(0, memberData.maxHealth)
+                healthBar:SetValue(memberData.health)
+                
+                -- Health bar background
+                local healthBg = healthBar:CreateTexture(nil, "BACKGROUND")
+                healthBg:SetAllPoints(healthBar)
+                healthBg:SetTexture("Interface\\Buttons\\WHITE8X8")
+                healthBg:SetVertexColor(0.2, 0.2, 0.2, 0.8)
+                
+                -- Health text
+                local healthText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                healthText:SetPoint("CENTER", healthBar, "CENTER")
+                healthText:SetFont("Fonts\\FRIZQT__.TTF", 9, "")
+                healthText:SetTextColor(1, 1, 1, 1)
+                healthText:SetText(memberData.health .. "/" .. memberData.maxHealth)
+                
+                -- Power/Mana bar
+                local powerBar = CreateFrame("StatusBar", nil, memberFrame)
+                powerBar:SetSize(180, 8)
+                powerBar:SetPoint("TOPLEFT", healthBar, "BOTTOMLEFT", 0, -1)
+                powerBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+                
+                -- Power color based on class
+                if memberData.class == "PRIEST" or memberData.class == "MAGE" then
+                    powerBar:SetStatusBarColor(0, 0, 1, 1) -- Blue mana
+                elseif memberData.class == "ROGUE" then
+                    powerBar:SetStatusBarColor(1, 1, 0, 1) -- Yellow energy
+                else
+                    powerBar:SetStatusBarColor(0, 0, 1, 1) -- Default mana
+                end
+                
+                powerBar:SetMinMaxValues(0, memberData.maxPower)
+                powerBar:SetValue(memberData.power)
+                
+                -- Power bar background
+                local powerBg = powerBar:CreateTexture(nil, "BACKGROUND")
+                powerBg:SetAllPoints(powerBar)
+                powerBg:SetTexture("Interface\\Buttons\\WHITE8X8")
+                powerBg:SetVertexColor(0.1, 0.1, 0.2, 0.8)
+                
+                -- Role icon
+                if memberData.role then
+                    local roleIcon = memberFrame:CreateTexture(nil, "OVERLAY")
+                    roleIcon:SetSize(12, 12)
+                    roleIcon:SetPoint("TOPRIGHT", memberFrame, "TOPRIGHT", -2, -2)
+                    
+                    if memberData.role == "TANK" then
+                        roleIcon:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
+                        roleIcon:SetTexCoord(0, 19/64, 22/64, 41/64)
+                    elseif memberData.role == "HEALER" then
+                        roleIcon:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
+                        roleIcon:SetTexCoord(20/64, 39/64, 1/64, 20/64)
+                    elseif memberData.role == "DAMAGER" then
+                        roleIcon:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES")
+                        roleIcon:SetTexCoord(20/64, 39/64, 22/64, 41/64)
+                    end
+                end
+            end
+        end
+        
+        _G.WoW95TestPartyWindow:Show()
+        print("Test party window created and shown!")
+        
+    elseif command == "off" then
+        if _G.WoW95TestPartyWindow then
+            _G.WoW95TestPartyWindow:Hide()
+            print("Test party window hidden")
+        else
+            print("No test window to hide")
+        end
+    elseif command == "hide" then
+        print("Manually hiding Blizzard party frames...")
+        if WoW95.PartyRaid then
+            WoW95.PartyRaid:HideBlizzardPartyFrames()
+        else
+            -- Manual hiding if module not loaded
+            if PartyFrame then PartyFrame:Hide() end
+            if CompactPartyFrame then CompactPartyFrame:Hide() end
+            for i = 1, 4 do
+                local frame = _G["PartyMemberFrame" .. i]
+                if frame then frame:Hide() end
+            end
+            print("Manual hide attempted")
+        end
+    elseif command == "debug" then
+        print("=== PartyRaid Module Debug Info ===")
+        print("- WoW95.PartyRaid exists:", WoW95.PartyRaid ~= nil)
+        print("- Group type:", IsInRaid() and "raid" or (IsInGroup() and "party" or "solo"))
+        print("- Group members:", GetNumGroupMembers())
+        
+        -- Check mouseover casting settings
+        print("- Mouseover casting enabled:", GetCVar("enableMouseoverCast") == "1")
+        print("- Auto self cast enabled:", GetCVar("autoSelfCast") == "1")
+        print("- Self cast key modifier:", GetCVar("autoSelfCastKey") or "none")
+        print("- Party member in range:", UnitExists("party1") and UnitInRange("party1") or "no party1")
+        if UnitExists("party1") then
+            print("- Party1 name:", UnitName("party1"))
+            print("- Party1 can assist:", UnitCanAssist("player", "party1"))
+            print("- Party1 is connected:", UnitIsConnected("party1"))
+        end
+        
+        -- List all registered modules
+        local moduleNames = {}
+        for name, _ in pairs(WoW95.modules or {}) do
+            table.insert(moduleNames, name)
+        end
+        print("- Modules registered:", table.concat(moduleNames, ", "))
+        
+        if WoW95.PartyRaid then
+            print("- Current group type:", WoW95.PartyRaid.currentGroupType)
+            print("- Party container exists:", WoW95.PartyRaid.partyContainer ~= nil)
+            if WoW95.PartyRaid.partyContainer then
+                print("- Container visible:", WoW95.PartyRaid.partyContainer:IsShown())
+                print("- Container size:", WoW95.PartyRaid.partyContainer:GetSize())
+            end
+            print("- Party frames count:", #(WoW95.PartyRaid.partyFrames or {}))
+            print("- Module loaded and ready!")
+        else
+            print("ERROR: Module not loaded! Use /reload and check for lua errors.")
+        end
+        print("=====================================")
+    elseif command == "fixmouseover" then
+        print("Fixing mouseover casting settings...")
+        SetCVar("autoSelfCast", "0")
+        SetCVar("enableMouseoverCast", "1") 
+        print("Settings updated:")
+        print("- Auto self cast: DISABLED (was causing spells to target yourself)")
+        print("- Mouseover casting: ENABLED")
+        print("Try mouseover casting now!")
+    elseif command == "testcast" then
+        print("Testing spell casting on party member...")
+        if UnitExists("party1") then
+            print("Attempting to cast on party1: " .. UnitName("party1"))
+            
+            -- Try different targeting methods
+            print("Method 1: Direct spell with unit parameter")
+            if IsSpellKnown(2061) then -- Flash Heal
+                CastSpellByName("Flash Heal", "party1")
+                print("Attempted Flash Heal on party1")
+            end
+            
+            print("Method 2: Target first, then cast")
+            TargetUnit("party1")
+            if UnitName("target") == UnitName("party1") then
+                print("Successfully targeted party1, now casting...")
+                if IsSpellKnown(2061) then
+                    CastSpellByName("Flash Heal")
+                    print("Cast Flash Heal on target")
+                end
+            else
+                print("Failed to target party1")
+            end
+            
+        else
+            print("No party1 member found")
+        end
+    elseif command == "showblizzard" then
+        print("Temporarily showing Blizzard party frames for testing...")
+        if PartyFrame then 
+            PartyFrame:Show() 
+            PartyFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+            print("PartyFrame shown")
+        end
+        if CompactPartyFrame then 
+            CompactPartyFrame:Show()
+            CompactPartyFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+            print("CompactPartyFrame shown")
+        end
+        for i = 1, 4 do
+            local frame = _G["PartyMemberFrame" .. i]
+            if frame then 
+                frame:Show()
+                frame:RegisterEvent("UNIT_HEALTH")
+                print("PartyMemberFrame" .. i .. " shown")
+            end
+        end
+        print("Test mouseover casting on Blizzard frames, then use 'hideblizzard' command")
+    elseif command == "hideblizzard" then
+        print("Hiding Blizzard party frames again...")
+        if WoW95.PartyRaid then
+            WoW95.PartyRaid:HideBlizzardPartyFrames()
+            print("Blizzard frames hidden")
+        end
+    elseif command == "testspell" then
+        print("=== Spell Casting Diagnostic ===")
+        if UnitExists("party1") then
+            local name = UnitName("party1")
+            print("Testing spell casting on: " .. name)
+            print("- Unit exists: " .. tostring(UnitExists("party1")))
+            print("- Unit is connected: " .. tostring(UnitIsConnected("party1")))
+            print("- Unit can assist: " .. tostring(UnitCanAssist("player", "party1")))
+            print("- Unit in range: " .. tostring(UnitInRange("party1")))
+            print("- Unit is friendly: " .. tostring(UnitIsFriend("player", "party1")))
+            print("- Player can attack: " .. tostring(UnitCanAttack("player", "party1")))
+            print("- Unit is same faction: " .. tostring(UnitFactionGroup("player") == UnitFactionGroup("party1")))
+            
+            local distance = C_MapAndQuestLog and C_MapAndQuestLog.GetDistanceSqToQuest and "unknown" or "N/A"
+            print("- Approximate distance: " .. tostring(distance))
+            
+            -- Check spell availability
+            print("- Flash of Light known: " .. tostring(IsSpellKnown(19750) or IsSpellKnown(82326)))
+            print("- In combat: " .. tostring(InCombatLockdown()))
+            
+        else
+            print("No party1 member to test with")
+        end
+        print("================================")
+    else
+        print("Usage: /partytest [on|off|debug|fixmouseover|showblizzard|hideblizzard|testspell]")
+        print("  on           - Enable test mode with fake party members")
+        print("  off          - Disable test mode")
+        print("  debug        - Show module status")
+        print("  fixmouseover - Fix mouseover casting settings")
+        print("  showblizzard - Show Blizzard frames to test mouseover")
+        print("  hideblizzard - Hide Blizzard frames again")
+        print("  testspell    - Test spell casting mechanics")
+    end
 end
 
 -- Create main event frame

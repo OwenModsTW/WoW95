@@ -67,6 +67,15 @@ WindowsCore.PROGRAMS = {
         tooltip = "Game Menu",
         window = {width = 300, height = 400, title = "Game Menu - World of Warcraft"}
     },
+    
+    -- Group Finder
+    ["PVEFrame"] = {
+        name = "Group Finder",
+        icon = {0.2, 0.8, 0.2, 1},
+        tooltip = "Dungeon Finder, Raid Finder & Premade Groups",
+        window = {width = 850, height = 600, title = "Group Finder - World of Warcraft"},
+        customModule = "GroupFinderReskin"
+    },
 }
 
 function WindowsCore:Init()
@@ -191,12 +200,14 @@ function WindowsCore:SetupFrameHooks()
     -- Hook social frames (handled by SocialWindows module)
     HookFrame("GuildFrame", WoW95.SocialWindows)
     HookFrame("CommunitiesFrame", WoW95.SocialWindows)
-    HookFrame("FriendsFrame", WoW95.SocialWindows)
-    HookFrame("LFGParentFrame", WoW95.SocialWindows)
+    -- HookFrame("FriendsFrame", WoW95.SocialWindows)  -- DISABLED - Use vanilla for early release
     HookFrame("PVPUIFrame", WoW95.SocialWindows)
     
+    -- Hook Group Finder frames (DISABLED for early release)
+    -- HookFrame("PVEFrame", WoW95.GroupFinderReskin)
+    
     -- Hook system frames (handled by SystemWindows module)
-    HookFrame("GameMenuFrame", WoW95.SystemWindows)
+    -- HookFrame("GameMenuFrame", WoW95.SystemWindows)  -- DISABLED - Keep vanilla game menu for logout/exit
     HookFrame("InterfaceOptionsFrame", WoW95.SystemWindows)
     HookFrame("EncounterJournal", WoW95.SystemWindows)
     

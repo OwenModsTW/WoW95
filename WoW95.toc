@@ -17,11 +17,16 @@
 WoW95.lua
 
 # Module Files (will be added as we create them)
+Modules\Settings.lua
 Modules\Taskbar.lua
 Modules\StartMenu.lua
 Modules\ActionBars.lua
+Modules\Frames.lua
+# Modules\PartyRaidSimple.lua
+Modules\PartyRaid.lua
+# Modules\PartyRaidTest.lua
 # Modules\Chat.lua
-# Modules\Minimap.lua
+Modules\Minimap.lua
 Modules\Bags.lua
 Modules\MicroMenu.lua
 Modules\QuestTracker.lua
@@ -38,6 +43,8 @@ Modules\Windows\QuestWindow.lua
 Modules\Windows\AchievementsWindow.lua
 Modules\Windows\SocialWindows.lua
 Modules\Windows\SystemWindows.lua
+# Modules\Windows\GroupFinder.lua  # OLD - Custom implementation
+# Modules\Windows\GroupFinderReskin.lua  # DISABLED - Needs more work before release
 # Modules\Windows.lua  # OLD - Commented out to prevent conflicts
 
 Modules\Games.lua

@@ -61,12 +61,11 @@ function GuildWindow:CreateWindow(frameName, program)
         WoW95:Debug("Found titleBar, forcing blue color...")
         -- Apply the EXACT same title bar styling as other working windows
         programWindow.titleBar:SetBackdrop({
-            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+            bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = false,
-            tileSize = 16,
-            edgeSize = 1,
-            insets = {left = 1, right = 1, top = 1, bottom = 1}
+            tile = true,
+            tileSize = 8,
+            edgeSize = 1
         })
         programWindow.titleBar:SetBackdropColor(0.0, 0.0, 0.5, 1) -- DIRECT BLUE COLOR
         programWindow.titleBar:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)

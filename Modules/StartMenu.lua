@@ -23,23 +23,70 @@ StartMenu.menuItems = {
         text = "Programs",
         icon = "Interface\\Icons\\INV_Misc_Book_09",
         submenu = {
-            {text = "Character Info", func = function() ToggleCharacter("PaperDollFrame") end},
-            {text = "Spellbook & Abilities", func = function() ToggleSpellBook(BOOKTYPE_SPELL) end},
-            {text = "Talents", func = function() if not PlayerTalentFrame then TalentFrame_LoadUI() end ToggleTalentFrame() end},
-            {text = "Adventure Guide", func = function() ToggleEncounterJournal() end},
-            {text = "Collections", func = function() ToggleCollectionsJournal() end},
-            {text = "Group Finder", func = function() PVEFrame_ToggleFrame() end},
-            {text = "Guild & Communities", func = function() ToggleGuildFrame() end},
-            {text = "Friends & Who", func = function() ToggleFriendsFrame() end},
+            {text = "Character Info", icon = "Interface\\Icons\\INV_Chest_Cloth_17", func = function() ToggleCharacter("PaperDollFrame") end},
+            {text = "Spellbook & Abilities", icon = "Interface\\Icons\\INV_Misc_Book_11", func = function() 
+                -- Try multiple spellbook opening methods
+                local success = false
+                
+                -- Method 1: Try ToggleSpellBook
+                if ToggleSpellBook then
+                    local ok, err = pcall(ToggleSpellBook, "spell")
+                    if ok then 
+                        success = true 
+                    else
+                        WoW95:Debug("ToggleSpellBook failed: " .. tostring(err))
+                    end
+                end
+                
+                -- Method 2: Try PlayerSpellsFrame (modern)
+                if not success and PlayerSpellsFrame then
+                    local ok, err = pcall(function()
+                        if PlayerSpellsFrame:IsShown() then
+                            PlayerSpellsFrame:Hide()
+                        else
+                            PlayerSpellsFrame:Show()
+                        end
+                    end)
+                    if ok then success = true end
+                end
+                
+                -- Method 3: Try SpellBookFrame (legacy)
+                if not success and SpellBookFrame then
+                    local ok, err = pcall(function()
+                        if SpellBookFrame:IsShown() then
+                            HideUIPanel(SpellBookFrame)
+                        else
+                            ShowUIPanel(SpellBookFrame)
+                        end
+                    end)
+                    if ok then success = true end
+                end
+                
+                if not success then
+                    WoW95:Print("Unable to open spellbook - try pressing P key")
+                end
+            end},
+            {text = "Adventure Guide", icon = "Interface\\Icons\\INV_Misc_Map02", func = function() ToggleEncounterJournal() end},
+            {text = "Collections", icon = "Interface\\Icons\\MountJournalPortrait", func = function() ToggleCollectionsJournal() end},
+            {text = "Group Finder", icon = "Interface\\Icons\\INV_Helmet_08", func = function() PVEFrame_ToggleFrame() end},
+            {text = "Guild & Communities", icon = "Interface\\Icons\\Achievement_GuildPerk_WorkingAsATeam", func = function() ToggleGuildFrame() end},
+            {text = "Social", icon = "Interface\\Icons\\INV_Misc_GroupLooking", func = function() 
+                -- Open vanilla Friends frame (Social UI)
+                if ToggleFriendsFrame then
+                    ToggleFriendsFrame(1) -- 1 = Friends tab
+                else
+                    WoW95:Print("Social window not available")
+                end
+            end},
         }
     },
     {
         text = "Documents",
         icon = "Interface\\Icons\\INV_Misc_Note_01",
         submenu = {
-            {text = "Quest Log", func = function() ToggleQuestLog() end},
-            {text = "Achievement", func = function() ToggleAchievementFrame() end},
-            {text = "Calendar", func = function() 
+            {text = "Quest Log", icon = "Interface\\Icons\\INV_Misc_Note_06", func = function() ToggleQuestLog() end},
+            {text = "Achievement", icon = "Interface\\Icons\\Achievement_General", func = function() ToggleAchievementFrame() end},
+            {text = "Calendar", icon = "Interface\\Icons\\INV_Misc_Note_02", func = function() 
                 if not CalendarFrame then 
                     if C_AddOns and C_AddOns.LoadAddOn then
                         C_AddOns.LoadAddOn("Blizzard_Calendar")
@@ -49,21 +96,21 @@ StartMenu.menuItems = {
                 end
                 if Calendar_Toggle then Calendar_Toggle() end
             end},
-            {text = "Dungeon Journal", func = function() ToggleEncounterJournal() end},
+            {text = "Dungeon Journal", icon = "Interface\\Icons\\INV_Misc_Book_17", func = function() ToggleEncounterJournal() end},
         }
     },
     {
         text = "Games",
         icon = "Interface\\Icons\\INV_Misc_Toy_10",
         submenu = {
-            {text = "Minesweeper", func = function() 
+            {text = "Minesweeper", icon = "Interface\\Icons\\INV_Misc_Bomb_05", func = function() 
                 if WoW95.Games and WoW95.Games.OpenMinesweeper then
                     WoW95.Games:OpenMinesweeper()
                 else
                     WoW95:Print("Games module not loaded!")
                 end
             end},
-            {text = "Solitaire", func = function() 
+            {text = "Solitaire", icon = "Interface\\Icons\\INV_Misc_Note_05", func = function() 
                 WoW95:Print("Solitaire - Coming Soon!")
             end},
         }
@@ -72,19 +119,112 @@ StartMenu.menuItems = {
         text = "Settings",
         icon = "Interface\\Icons\\INV_Gizmo_02",
         submenu = {
-            {text = "Game Menu", func = function() ToggleGameMenu() end},
-            {text = "Interface Options", func = function() Settings.OpenToCategory(Settings.INTERFACE_CATEGORY_ID) end},
-            {text = "Key Bindings", func = function() Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID) end},
-            {text = "Macros", func = function() 
-                if C_AddOns and C_AddOns.LoadAddOn then
-                    C_AddOns.LoadAddOn("Blizzard_MacroUI")
-                elseif LoadAddOn then
-                    LoadAddOn("Blizzard_MacroUI")
+            {text = "Interface Options", icon = "Interface\\Icons\\Trade_Engineering", func = function() Settings.OpenToCategory(Settings.INTERFACE_CATEGORY_ID) end},
+            {text = "Key Bindings", icon = "Interface\\Icons\\INV_Misc_Key_03", func = function() Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID) end},
+            {text = "Macros", icon = "Interface\\Icons\\INV_Misc_Note_04", func = function() 
+                -- Execute the /macro slash command directly
+                local success = false
+                
+                -- Method 1: Try the /macro slash command
+                local ok, err = pcall(function()
+                    ChatFrame1EditBox:SetText("/macro")
+                    ChatEdit_SendText(ChatFrame1EditBox)
+                    success = true
+                end)
+                
+                if not success then
+                    -- Method 2: Load addon and try direct functions
+                    if C_AddOns and C_AddOns.LoadAddOn then
+                        C_AddOns.LoadAddOn("Blizzard_MacroUI")
+                    elseif LoadAddOn then
+                        LoadAddOn("Blizzard_MacroUI")
+                    end
+                    
+                    if MacroFrame then
+                        local ok2, err2 = pcall(function()
+                            MacroFrame:Show()
+                            success = true
+                        end)
+                    end
                 end
-                if MacroFrame then ToggleMacroFrame() end 
+                
+                if not success then
+                    WoW95:Print("Unable to open macros - try typing /macro")
+                end
             end},
-            {text = "Add-Ons", func = function() StartMenu:OpenAddOnList() end},
-            {text = "WoW95 Options", func = function() StartMenu:ShowWoW95Options() end},
+            {text = "Add-Ons", icon = "Interface\\Icons\\Trade_Engineering", func = function() 
+                -- Try multiple methods to open the addon interface
+                local success = false
+                
+                -- Method 1: Try to load and show AddonList
+                local ok1, err1 = pcall(function()
+                    if C_AddOns and C_AddOns.LoadAddOn then
+                        C_AddOns.LoadAddOn("Blizzard_AddonList")
+                    elseif LoadAddOn then
+                        LoadAddOn("Blizzard_AddonList")
+                    end
+                    
+                    if AddonList and AddonList.Show then
+                        AddonList:Show()
+                        success = true
+                    elseif AddonList_Show then
+                        AddonList_Show()
+                        success = true
+                    end
+                end)
+                
+                -- Method 2: Try opening through game menu
+                if not success then
+                    local ok2, err2 = pcall(function()
+                        -- Set flag to allow game menu
+                        StartMenu.allowGameMenu = true
+                        
+                        -- Show game menu
+                        if StartMenu.originalToggleGameMenu then
+                            StartMenu.originalToggleGameMenu()
+                        end
+                        
+                        -- Wait and try to click the addons button
+                        C_Timer.After(0.2, function()
+                            if GameMenuFrame and GameMenuFrame:IsShown() then
+                                for i = 1, GameMenuFrame:GetNumChildren() do
+                                    local child = select(i, GameMenuFrame:GetChildren())
+                                    if child and child:GetObjectType() == "Button" then
+                                        local text = child:GetText()
+                                        if text and (text:find("Add") or text:find("Addon")) then
+                                            child:Click()
+                                            success = true
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            -- Reset flag
+                            StartMenu.allowGameMenu = false
+                            
+                            if not success then
+                                WoW95:Print("Could not open Add-Ons - try Esc > AddOns manually")
+                            end
+                        end)
+                    end)
+                end
+                
+                -- Method 3: Fallback to slash command
+                if not success then
+                    C_Timer.After(0.1, function()
+                        local ok3, err3 = pcall(function()
+                            ChatFrame1EditBox:SetText("/addons")
+                            ChatEdit_SendText(ChatFrame1EditBox)
+                        end)
+                        
+                        if not ok3 then
+                            WoW95:Print("Unable to open add-ons - try typing /addons or press Esc > AddOns")
+                        end
+                    end)
+                end
+            end},
+            {text = "WoW95 Options", icon = "Interface\\Icons\\INV_Misc_Gear_01", func = function() StartMenu:ShowWoW95Options() end},
         }
     },
     {type = "separator"},
@@ -92,20 +232,25 @@ StartMenu.menuItems = {
         text = "Find",
         icon = "Interface\\Icons\\INV_Misc_Spyglass_02",
         submenu = {
-            {text = "Find Group", func = function() if PVEFrame then PVEFrame_ToggleFrame("GroupFinderFrame") else LFGParentFrame_Toggle() end end},
-            {text = "Who List", func = function() if FriendsFrame then ToggleFriendsFrame(4) else print("/who for who list") end end},
-            {text = "Guild Finder", func = function() if IsInGuild() then ToggleGuildFrame() else print("Not in a guild") end end},
+            {text = "Find Group", icon = "Interface\\Icons\\INV_Helmet_08", func = function() if PVEFrame then PVEFrame_ToggleFrame("GroupFinderFrame") else LFGParentFrame_Toggle() end end},
+            {text = "Quick Join", icon = "Interface\\Icons\\INV_Misc_GroupLooking", func = function() if FriendsFrame then ToggleFriendsFrame(4) else print("Quick Join not available") end end},
+            {text = "Who List", icon = "Interface\\Icons\\INV_Misc_Spyglass_02", func = function() 
+                -- Execute /who command directly to show player list
+                ChatFrame1EditBox:SetText("/who")
+                ChatEdit_SendText(ChatFrame1EditBox)
+            end},
+            {text = "Guild Finder", icon = "Interface\\Icons\\Achievement_GuildPerk_WorkingAsATeam", func = function() if IsInGuild() then ToggleGuildFrame() else print("Not in a guild") end end},
         }
     },
     {
         text = "Help",
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
         submenu = {
-            {text = "Help Request", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
-            {text = "Customer Support", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
-            {text = "Bug Report", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
-            {text = "Submit Suggestion", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
-            {text = "About WoW95", func = function() StartMenu:ShowAbout() end},
+            {text = "Help Request", icon = "Interface\\Icons\\INV_Letter_18", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
+            {text = "Customer Support", icon = "Interface\\Icons\\INV_Misc_Note_01", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
+            {text = "Bug Report", icon = "Interface\\Icons\\INV_Misc_Bug_02", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
+            {text = "Submit Suggestion", icon = "Interface\\Icons\\INV_Misc_Note_03", func = function() if HelpFrame then ToggleHelpFrame() else print("Help system not available") end end},
+            {text = "About WoW95", icon = "Interface\\Icons\\Achievement_General", func = function() StartMenu:ShowAbout() end},
         }
     },
     {type = "separator"},
@@ -118,12 +263,78 @@ StartMenu.menuItems = {
     {
         text = "Log Off " .. (UnitName("player") or ""),
         icon = "Interface\\Icons\\INV_Misc_Head_Human_01",
-        func = function() Logout() end
+        func = function() 
+            -- Close our start menu immediately
+            StartMenu:Hide()
+            
+            -- Check if we're in combat
+            if InCombatLockdown() then
+                WoW95:Print("Cannot log off during combat!")
+                return
+            end
+            
+            -- Use a timer to ensure clean execution path
+            C_Timer.After(0.01, function()
+                -- Set flag to allow game menu to show
+                StartMenu.allowGameMenu = true
+                
+                -- Use original ToggleGameMenu to show vanilla menu
+                if StartMenu.originalToggleGameMenu then
+                    -- Ensure we're not in a tainted context
+                    local success, err = pcall(StartMenu.originalToggleGameMenu)
+                    if not success then
+                        WoW95:Debug("Error opening game menu: " .. tostring(err))
+                        -- Fallback: Try to show the game menu frame directly
+                        if GameMenuFrame and not GameMenuFrame:IsShown() then
+                            GameMenuFrame:Show()
+                        end
+                    end
+                end
+                
+                -- Reset flag after a delay
+                C_Timer.After(1.0, function()
+                    StartMenu.allowGameMenu = false
+                end)
+            end)
+        end
     },
     {
         text = "Exit WoW",
         icon = "Interface\\Icons\\INV_Misc_PowerCrystal_01",
-        func = function() Quit() end
+        func = function() 
+            -- Close our start menu immediately
+            StartMenu:Hide()
+            
+            -- Check if we're in combat
+            if InCombatLockdown() then
+                WoW95:Print("Cannot exit game during combat!")
+                return
+            end
+            
+            -- Use a timer to ensure clean execution path
+            C_Timer.After(0.01, function()
+                -- Set flag to allow game menu to show
+                StartMenu.allowGameMenu = true
+                
+                -- Use original ToggleGameMenu to show vanilla menu
+                if StartMenu.originalToggleGameMenu then
+                    -- Ensure we're not in a tainted context
+                    local success, err = pcall(StartMenu.originalToggleGameMenu)
+                    if not success then
+                        WoW95:Debug("Error opening game menu: " .. tostring(err))
+                        -- Fallback: Try to show the game menu frame directly
+                        if GameMenuFrame and not GameMenuFrame:IsShown() then
+                            GameMenuFrame:Show()
+                        end
+                    end
+                end
+                
+                -- Reset flag after a delay
+                C_Timer.After(1.0, function()
+                    StartMenu.allowGameMenu = false
+                end)
+            end)
+        end
     },
 }
 
@@ -159,6 +370,42 @@ function StartMenu:CreateStartMenu()
     self.frame:SetBackdropColor(0.75, 0.75, 0.75, 1)
     self.frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
     
+    -- Add Windows 95 style blue vertical bar on the left (like reference image)
+    local blueBar = CreateFrame("Frame", nil, self.frame, "BackdropTemplate")
+    blueBar:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 2, -2)
+    blueBar:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 2, 2)
+    blueBar:SetWidth(22)
+    blueBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 8
+    })
+    blueBar:SetBackdropColor(unpack(WoW95.colors.titleBar)) -- Use consistent WoW95 blue
+    
+    -- Add small gray gradient strip next to blue bar (like reference)
+    local grayStrip = CreateFrame("Frame", nil, self.frame, "BackdropTemplate")
+    grayStrip:SetPoint("TOPLEFT", blueBar, "TOPRIGHT", 0, 0)
+    grayStrip:SetPoint("BOTTOMLEFT", blueBar, "BOTTOMRIGHT", 0, 0)
+    grayStrip:SetWidth(4)
+    grayStrip:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 8
+    })
+    grayStrip:SetBackdropColor(0.6, 0.6, 0.6, 1) -- Darker gray for gradient effect
+    
+    -- Add "WOW95" text rotated correctly (reading from bottom to top like Windows reference)
+    local logoText = blueBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    logoText:SetPoint("CENTER", blueBar, "BOTTOM", -3, 35) -- Move left in code (away from right side visually)
+    logoText:SetText("WOW95")
+    logoText:SetTextColor(unpack(WoW95.colors.titleBarText)) -- Use consistent title bar text color
+    logoText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE") -- Slightly smaller text to fit in 22px width
+    logoText:SetRotation(math.rad(90)) -- Rotate 90 degrees clockwise (text reads bottom to top)
+    
+    -- Store reference for potential future use
+    self.frame.blueBar = blueBar
+    self.frame.logoText = logoText
+    
     -- Close menu when clicking outside
     self.frame:SetScript("OnShow", function()
         self:RegisterClickOutside()
@@ -177,19 +424,19 @@ function StartMenu:CreateMenuItems()
     
     for i, item in ipairs(self.menuItems) do
         if item.type == "separator" then
-            -- Create separator
+            -- Create separator (account for blue bar + gray strip)
             local separator = self.frame:CreateTexture(nil, "ARTWORK")
             separator:SetHeight(SEPARATOR_HEIGHT)
-            separator:SetPoint("LEFT", self.frame, "LEFT", 8, yOffset - 2)
+            separator:SetPoint("LEFT", self.frame, "LEFT", 30, yOffset - 2) -- Start after blue bar + gray strip
             separator:SetPoint("RIGHT", self.frame, "RIGHT", -8, yOffset - 2)
             separator:SetColorTexture(0.5, 0.5, 0.5, 1)
             
             yOffset = yOffset - SEPARATOR_HEIGHT
         else
-            -- Create menu item button
+            -- Create menu item button (account for blue bar + gray strip)
             local button = CreateFrame("Button", "WoW95StartMenuItem" .. i, self.frame, "BackdropTemplate")
-            button:SetSize(MENU_WIDTH - 8, MENU_ITEM_HEIGHT)
-            button:SetPoint("TOP", self.frame, "TOP", 0, yOffset)
+            button:SetSize(MENU_WIDTH - 30, MENU_ITEM_HEIGHT) -- Reduce width for blue bar + gray strip  
+            button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 28, yOffset) -- Start after blue bar + gray strip
             
             -- Button backdrop for hover effect
             button:SetBackdrop({
@@ -218,12 +465,11 @@ function StartMenu:CreateMenuItems()
             
             -- Submenu arrow
             if item.submenu then
-                local arrow = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                local arrow = button:CreateTexture(nil, "OVERLAY")
+                arrow:SetSize(8, 8)
                 arrow:SetPoint("RIGHT", button, "RIGHT", -8, 0)
-                arrow:SetText("►")
-                arrow:SetTextColor(0, 0, 0, 1)
-                arrow:SetShadowOffset(0, 0)
-                arrow:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+                arrow:SetTexture(WoW95.textures.arrow)
+                arrow:SetVertexColor(0, 0, 0, 1) -- Black arrow
             end
             
             -- Button functionality
@@ -231,7 +477,10 @@ function StartMenu:CreateMenuItems()
                 if item.submenu then
                     self:ShowSubmenu(item.submenu, button)
                 elseif item.func then
-                    item.func()
+                    -- Ensure clean execution by breaking out of the click handler
+                    C_Timer.After(0, function()
+                        item.func()
+                    end)
                     self:Hide()
                 end
             end)
@@ -395,31 +644,34 @@ end
 
 function StartMenu:HookEscapeKey()
     -- Override the escape key functionality
-    local originalToggleGameMenu = ToggleGameMenu
+    self.originalToggleGameMenu = ToggleGameMenu
     
     ToggleGameMenu = function()
         -- If any Blizzard menus are open, close them first
         if GameMenuFrame and GameMenuFrame:IsShown() then
-            originalToggleGameMenu()
+            StartMenu.originalToggleGameMenu()
         else
             -- Show our start menu instead
-            self:Toggle()
+            StartMenu:Toggle()
         end
     end
     
-    -- Also hook the Game Menu frame to hide it completely
+    -- Also hook the Game Menu frame to hide it completely ONLY when opened via escape key
     if GameMenuFrame then
         GameMenuFrame:HookScript("OnShow", function()
-            GameMenuFrame:Hide()
-            self:Show()
+            -- Only hide if we're not deliberately trying to show it from logout/exit buttons
+            if not StartMenu.allowGameMenu then
+                GameMenuFrame:Hide()
+                StartMenu:Show()
+            end
         end)
     end
 end
 
 function StartMenu:ShowRunDialog()
-    -- Create a "Run" dialog similar to Windows 95
+    -- Create a "Run" dialog exactly like Windows 95
     local dialog = CreateFrame("Frame", "WoW95RunDialog", UIParent, "BackdropTemplate")
-    dialog:SetSize(300, 120)
+    dialog:SetSize(350, 150)
     dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     dialog:SetFrameStrata("TOOLTIP")
     dialog:SetFrameLevel(300)
@@ -436,37 +688,74 @@ function StartMenu:ShowRunDialog()
     dialog:SetBackdropColor(0.75, 0.75, 0.75, 1)
     dialog:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
     
+    -- Title bar
+    local titleBar = CreateFrame("Frame", nil, dialog, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", dialog, "TOPLEFT", 2, -2)
+    titleBar:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -2, -2)
+    titleBar:SetHeight(18)
+    titleBar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true,
+        tileSize = 8
+    })
+    titleBar:SetBackdropColor(unpack(WoW95.colors.titleBar))
+    
+    local titleText = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    titleText:SetPoint("LEFT", titleBar, "LEFT", 4, 0)
+    titleText:SetText("Run")
+    titleText:SetTextColor(unpack(WoW95.colors.titleBarText))
+    
+    -- Run icon (folder icon)
+    local runIcon = dialog:CreateTexture(nil, "ARTWORK")
+    runIcon:SetSize(32, 32)
+    runIcon:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -35)
+    runIcon:SetTexture("Interface\\Icons\\INV_Misc_Folder_01")
+    
     -- Instructions
     local instructions = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    instructions:SetPoint("TOP", dialog, "TOP", 0, -20)
-    instructions:SetText("Type the name of a program, folder, or command:")
+    instructions:SetPoint("TOPLEFT", runIcon, "TOPRIGHT", 8, -5)
+    instructions:SetText("Type a slash command and WoW95 will execute it for you.\\nExamples: reload, macro, who, guild, calendar")
     instructions:SetTextColor(0, 0, 0, 1)
     instructions:SetShadowOffset(0, 0)
+    instructions:SetJustifyH("LEFT")
+    instructions:SetWidth(250)
+    
+    -- Open label
+    local openLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    openLabel:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -85)
+    openLabel:SetText("Open:")
+    openLabel:SetTextColor(0, 0, 0, 1)
+    openLabel:SetShadowOffset(0, 0)
     
     -- Input box
     local inputBox = CreateFrame("EditBox", "WoW95RunInput", dialog, "InputBoxTemplate")
-    inputBox:SetSize(260, 20)
-    inputBox:SetPoint("TOP", instructions, "BOTTOM", 0, -10)
+    inputBox:SetSize(250, 20)
+    inputBox:SetPoint("LEFT", openLabel, "RIGHT", 8, 0)
     inputBox:SetAutoFocus(true)
     
     -- Buttons
-    local okButton = WoW95:CreateButton("WoW95RunOK", dialog, 80, 24, "OK")
-    okButton:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -5, 10)
+    local okButton = WoW95:CreateButton("WoW95RunOK", dialog, 60, 24, "OK")
+    okButton:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -12, 12)
     okButton:SetScript("OnClick", function()
         local command = inputBox:GetText()
         if command and command ~= "" then
-            -- Try to execute as a slash command
-            ChatFrame1EditBox:SetText("/" .. command)
+            -- Add slash if not present
+            if not command:match("^/") then
+                command = "/" .. command
+            end
+            -- Execute the slash command
+            ChatFrame1EditBox:SetText(command)
             ChatEdit_SendText(ChatFrame1EditBox)
         end
         dialog:Hide()
     end)
     
-    local cancelButton = WoW95:CreateButton("WoW95RunCancel", dialog, 80, 24, "Cancel")
-    cancelButton:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 5, 10)
+    local cancelButton = WoW95:CreateButton("WoW95RunCancel", dialog, 60, 24, "Cancel")
+    cancelButton:SetPoint("RIGHT", okButton, "LEFT", -8, 0)
     cancelButton:SetScript("OnClick", function()
         dialog:Hide()
     end)
+    
     
     -- Enter key functionality
     inputBox:SetScript("OnEnterPressed", function()
@@ -495,8 +784,12 @@ end
 
 function StartMenu:ShowWoW95Options()
     -- Show WoW95 settings window
-    WoW95:Print("WoW95 Options - Coming soon!")
-    self:Hide()
+    if WoW95.Settings then
+        WoW95.Settings:CreateSettingsWindow()
+        self:Hide()
+    else
+        WoW95:Print("Settings module not loaded!")
+    end
 end
 
 function StartMenu:OpenAddOnList()
